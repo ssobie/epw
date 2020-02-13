@@ -14,7 +14,7 @@ source('/storage/home/ssobie/code/repos/epw/epw.projected.stats.r',chdir=T)
 
 read_cell <- function(var.name,lonc,latc,input.file,read.dir) {
 
-  print(input.file)              
+  ##print(input.file)              
   nc <- nc_open(paste(read.dir,input.file,sep=''))
   time.atts <- ncatt_get(nc,'time')
   time.calendar <- time.atts$calendar
@@ -162,7 +162,7 @@ calculate_epw_file_statistics <- function(epw.file,interval,gcm.list,stats.names
 
   past.cwec <- calc_cwec_values(epw.file$file,epw.file$dir,stats.names)             
   proj.cwec <- matrix(NA,nrow=glen,ncol=length(stats.names))
-
+  
   for (g in seq_along(gcm.list)) {
      gcm <- gcm.list[g]
      proj.cwec[g,] <- calc_cwec_values(paste0(gcm,'_',interval,'_',epw.file$file),paste0(tmp.dir,'gcm_epws/'),stats.names)              
@@ -194,7 +194,7 @@ create_cwec_table_sheets <- function(epw.file,intervals,lon,lat,
                                  gcm.list=gcm.list,epw.file=epw.file,interval=interval,
                                 tmp.dir=tmp.dir)
       interval.name <- paste0(as.numeric(strsplit(interval,'-')[[1]][2]) - 20,'s')
-                                                              
+
       future.epw.file <- paste0(interval.name,'_CAN_BC_',pef.split[3],'_CWEC2016.epw')
       create_ensemble_average_morphed_epw(epw.file=epw.file,
                                        variable.list=variable.list,
@@ -226,14 +226,6 @@ create_cwec_table_sheets <- function(epw.file,intervals,lon,lat,
    coords <- c(lon,lat)
    base.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/high_res_downscaling/bccaq_gcm_bc_subset/'
    check.dir <- paste0(base.dir,'ACCESS1-0/rcp85/annual/climatologies/')
-
-   ###tas.flag <- unlist(lapply(stats.list,function(x){grepl('tas_',x$name)}))
-   ###gcm.site.list <- lapply(stats.list[!tas.flag],calc_gcm_stats,coords,scenario,gcm.list,check.dir,base.dir)
-   ###gcm.site.tas  <- calc_gcm_tas_stats(coords,scenario,gcm.list,
-   ###                                    base.dir)
-   ###names(gcm.site.list) <- stats.names
-   ###rv <- list(cwec=cwec.entries,
-   ###           model=gcm.site.list)
    rv <- cwec.entries
    return(rv)
 }
@@ -246,18 +238,9 @@ create_cwec_table_sheets <- function(epw.file,intervals,lon,lat,
 ##---------------------------------------
 ##Info passed in from submission script
 scenario <- 'rcp85'
-new.location <- 'Whistler_Cheakamus_Lake_Rd'
-
-lon <- -123.038322 ## -123.31 ###
-lat <- 50.077508 ##48.5 ###
 
 method <- 'roll'
 rlen <- '21'
-
-##args <- commandArgs(trailingOnly=TRUE)
-##for(i in 1:length(args)){
-##    eval(parse(text=args[[i]]))
-##}
 
 if (method!='roll') { 
   rlen <- ''
@@ -297,22 +280,22 @@ stats.list <- list(list(name='hdd',type='annual',title='HDD'),
                  list(name='txxETCCDI',type='annual',title='TXX'),
                  list(name='tasmax.annual_quantile_975',type='annual',title='Cooling 2.5%'),
                  list(name='wetbulb.annual_quantile_975',type='annual',title='Cooling (Wetbulb) 2.5%'),
-                 list(name='tas_jan',type='monthly',title='January TAS'),                 
-                 list(name='tas_feb',type='monthly',title='February TAS'),                 
-                 list(name='tas_mar',type='monthly',title='March TAS'),                 
-                 list(name='tas_apr',type='monthly',title='April TAS'),                 
-                 list(name='tas_may',type='monthly',title='May TAS'),                 
-                 list(name='tas_jun',type='monthly',title='June TAS'),                 
-                 list(name='tas_jul',type='monthly',title='July TAS'),                 
-                 list(name='tas_aug',type='monthly',title='August TAS'),                 
-                 list(name='tas_sep',type='monthly',title='September TAS'),                 
-                 list(name='tas_oct',type='monthly',title='October TAS'),                 
-                 list(name='tas_nov',type='monthly',title='November TAS'),                 
+                 list(name='tas_jan',type='monthly',title='January TAS'),
+                 list(name='tas_feb',type='monthly',title='February TAS'),
+                 list(name='tas_mar',type='monthly',title='March TAS'),
+                 list(name='tas_apr',type='monthly',title='April TAS'),
+                 list(name='tas_may',type='monthly',title='May TAS'),
+                 list(name='tas_jun',type='monthly',title='June TAS'),
+                 list(name='tas_jul',type='monthly',title='July TAS'),
+                 list(name='tas_aug',type='monthly',title='August TAS'),
+                 list(name='tas_sep',type='monthly',title='September TAS'),
+                 list(name='tas_oct',type='monthly',title='October TAS'),
+                 list(name='tas_nov',type='monthly',title='November TAS'),
                  list(name='tas_dec',type='monthly',title='December TAS'),
-                 list(name='tas_win',type='monthly',title='Winter TAS'),                 
-                 list(name='tas_spr',type='monthly',title='Spring TAS'),                 
-                 list(name='tas_sum',type='monthly',title='Summer TAS'),                 
-                 list(name='tas_fal',type='monthly',title='Fall TAS'),                 
+                 list(name='tas_win',type='monthly',title='Winter TAS'),
+                 list(name='tas_spr',type='monthly',title='Spring TAS'),
+                 list(name='tas_sum',type='monthly',title='Summer TAS'),
+                 list(name='tas_fal',type='monthly',title='Fall TAS'),
                  list(name='tas_ann',type='monthly',title='Annual TAS'))
 
 
@@ -324,58 +307,50 @@ if (!file.exists(tmp.dir)) {
 
 intervals <- c('2011-2040','2041-2070','2071-2100')
 
+
 ##--------------------------------------------------------------------------------
-##First compute the offset file with 
-##PRISM climatologies
 
-epw.files <- generate_prism_offset(lon,lat,epw.dir,prism.dir,wx.morph.dir,new.location)
-browser()
-nearest.epw <- strsplit(epw.files$closest$file,'_')[[1]][3]
-nearest.epw.coords <- epw.files$closest$coords
-n.lon <- nearest.epw.coords[1]
-n.lat <- nearest.epw.coords[2]
-
-
-
-##--------------------------------------
-##Copy the morphing factors to temporary 
-##directory
 print('Copying EPW factors to tmp (31Gb)')
-##if (!file.exists(tmp.dir)) {
+if (!file.exists(tmp.dir)) {
   file.copy(from=morph.dir,to=tmp.dir,recursive=TRUE)
-##}
-
-epw.coords <- get_epw_coordinates(epw.files$closest$dir,epw.files$closest$file)
-
-print(new.location)
-write.dir <- paste0(wx.morph.dir,new.location,'/')
-if (!file.exists(write.dir)) {
-   dir.create(write.dir,recursive=TRUE)
 }
-n.lon <- epw.coords[1]
-n.lat <- epw.coords[2]
 
-sheets.closest <- create_cwec_table_sheets(epw.files$closest,
+
+cwec.2016.files <- list.files(path=epw.dir,pattern='_CWEC2016.epw')
+
+for (file in cwec.2016.files) {
+
+   epw.coords <- get_epw_coordinates(epw.dir,file)
+   epw.name <- strsplit(file,'_')[[1]][3]
+   epw.stn.names <- strsplit(epw.name,'\\.')[[1]]
+   new.location <- paste(epw.stn.names[-length(epw.stn.names)],collapse='_')  ##remove the stn id
+   write.dir <- paste0(wx.morph.dir,new.location,'/')
+   if (!file.exists(write.dir)) {
+      dir.create(write.dir,recursive=TRUE)
+   }
+
+   n.lon <- epw.coords[1]
+   n.lat <- epw.coords[2]
+
+   ##--------------------------------------
+   ##For each interval, calculate the morphed
+   ##epw files for each (10) GCMs for all
+   ##variables possible
+
+   ##Apply to each epw file separately
+
+   sheets.closest <- create_cwec_table_sheets(list(file=file,dir=epw.dir),
                                            intervals,n.lon,n.lat,
                                            gcm.list,variable.list,stats.list,
                                            tmp.dir,scenario,
                                            method,rlen,write.dir)
-if (!is.null(epw.files$offset)) {
-   sheets.offset <- create_cwec_table_sheets(epw.files$offset,
-                                             intervals,lon=lon,lat=lat,
-                                             gcm.list,variable.list,stats.list,
-                                             tmp.dir,scenario,
-                                             method,rlen,write.dir)
-} else {
-   sheets.offset <- NULL
+   make_formated_stats_table(nearest=epw.name,site=new.location,
+                             var.list=stats.list,
+                             sheets.closest=sheets.closest,
+                             sheets.offset=sheets.offset,
+                             method=method,rlen=rlen,write.dir)
+
 }
 
-make_formated_stats_table(nearest=nearest.epw,site=new.location,
-                          var.list=stats.list,
-                          sheets.closest=sheets.closest,
-                          sheets.offset=sheets.offset,
-                          method=method,rlen=rlen,write.dir)
-
-##--------------------------------------
-###clean.files <- list.files(path=tmp.dir,recursive=TRUE,full.name=T)
-###file.remove(clean.files)
+clean.files <- list.files(path=tmp.dir,recursive=TRUE,full.name=T)
+file.remove(clean.files)

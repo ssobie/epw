@@ -24,6 +24,32 @@ get_field_index <- function(var.name) {
 }
 
 ##------------------------------------------------------------------------------
+##Return the short names for the EPW field names
+   
+get_short_name <- function(var.name) {
+
+    short.name <- switch(var.name, 
+        dry_bulb_temperature='TAS',
+        dew_point_temperature='DWPT',
+        relative_humidity='RHS',
+        atmospheric_station_pressure='PS',
+        extraterrestrial_horizontal_radiation='ETHR',
+        extraterrestrial_direct_normal_radition='ETDR',
+        horizontal_infrared_radiation_intensity='IR',
+        global_horizontal_radiation='GHR',
+        direct_normal_radiation='DNR',
+        diffuse_horizontal_radiation='DHR',
+        wind_direction='WDIR',
+        wind_speed='WSPD',
+        total_sky_cover='TSC',
+        opaque_sky_cover='OSC',
+        snow_depth='SND',
+        liquid_precipitation_quantity='PR')
+   return(short.name)
+}
+
+
+##------------------------------------------------------------------------------
 ##Return the lon/lat coordinates for the supplied EPW file
 
 get_epw_coordinates <- function(epw.dir,epw.file) {

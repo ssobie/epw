@@ -1,56 +1,10 @@
 ##Script to produce table of statistics with the EPW files and GCM-PRISM projections
 
-library(ncdf4)
-
-source('/storage/home/ssobie/code/repos/crcm5/read.write.epw.r',chdir=T)
 source('/storage/home/ssobie/code/repos/building_code/bc.building.code.fxns.r',chdir=T)
-source('/storage/home/ssobie/code/repos/crcm5/epw.stats.formatted.table.functions.r',chdir=T)
+source('/storage/home/ssobie/code/repos/epw/epw.stats.formatted.table.functions.r',chdir=T)
 
 ##------------------------------------------------------------------------------
-##Match for EPW fields
-
-get_field_index <- function(var.name) {
-
-   field.names <- c('year', 'month', 'day', 'hour', 'minute',
-      'data_source_and_uncertainty_flags', 'dry_bulb_temperature',
-      'dew_point_temperature', 'relative_humidity',
-      'atmospheric_station_pressure', 'extraterrestrial_horizontal_radiation',
-      'extraterrestrial_direct_normal_radition',
-      'horizontal_infrared_radiation_intensity', 'global_horizontal_radiation',
-      'direct_normal_radiation', 'diffuse_horizontal_radiation',
-      'global_horizontal_illuminance', 'direct_normal_illuminance',
-      'diffuse_horizontal_illuminance', 'zenith_luminance', 'wind_direction',
-      'wind_speed', 'total_sky_cover', 'opaque_sky_cover', 'visibility',
-      'ceiling_height', 'present_weather_observation', 'present_weather_codes',
-      'precipitable_water', 'aerosol_optical_depth', 'snow_depth',
-      'days_since_last_snowfall', 'albedo', 'liquid_precipitation_depth',
-      'liquid_precipitation_quantity')
-   ix <- grep(var.name,field.names)
-}
-
-##------------------------------------------------------------------------------
-##Return the lon/lat coordinates for the supplied EPW file
-
-get_epw_coordinates <- function(epw.dir,epw.file) {
-
-   epw <- read.epw.file(epw.dir,epw.file)
-   epw.header <- epw$header
-   epw.first <- strsplit(epw.header[1],',')[[1]]
-   lon <- as.numeric(epw.first[8]) ##Fixed location
-   lat <- as.numeric(epw.first[7])
-   if (lon < -180 | lon > 180) {
-      stop('Ill defined longitude coordinate')
-   }
-   if (lat < 40 | lat > 90) {
-      stop('Ill defined latitude coordinate')
-   }
-
-   rv <- c(lon,lat)
-   return(rv)
-}
-
-##----------------------------------------------------------------------- 
-
+##Make sure GCM values are available for this location
 check_for_gcm_data <- function(lonc,latc,gcm.dir,gcm,scenario) {
 
   tasmax.files <- list.files(path=gcm.dir,pattern="tasmax_average_annual_climatology")
@@ -135,6 +89,11 @@ calc_cwec_values <- function(present.epw.file,epw.dir,var.names) {
   dates <- as.Date(paste('1999',sprintf('%02d',epw.present$data[,2]),sprintf('%02d',epw.present$data[,3]),sep='-'))
 
   fac <- as.factor(format(dates,'%Y-%m-%d'))
+  day.dates <- as.Date(levels(fac))
+  mon.fac <- as.factor(format(day.dates,'%m'))
+  seasons <-  c("DJF", "DJF", "MAM", "MAM", "MAM", "JJA", "JJA", "JJA", "SON", "SON", "SON", "DJF")
+  seas.fac <- factor(seasons[mon.fac], levels=c('DJF', 'MAM', 'JJA', 'SON'))
+
   epw.tas.daily <- tapply(epw.tas,fac,mean)
 
   epw.hdd <- dd(-1*epw.tas.daily,-18)
@@ -157,16 +116,40 @@ calc_cwec_values <- function(present.epw.file,epw.dir,var.names) {
   twb.975 <- round(quantile(epw.twb,0.975,names=F),1)
   twb.001 <- round(quantile(epw.twb,0.01,names=F),1)
 
-  cwec.col <- list(epw.hdd,
+  epw.tas.daily <- tapply(epw.tas,fac,mean)
+  
+  tas.monthly <- tapply(epw.tas.daily,mon.fac,mean)
+  tas.seasonal <- tapply(epw.tas.daily,seas.fac,mean)
+  tas.annual <- mean(epw.tas.daily)
+
+  cwec.col <- c(epw.hdd,
                    epw.cdd,
                    epw.txx,
                    epw.tnn,
                    epw.975,
                    epw.001,
                    twb.975,
-                   twb.001)
-  names(cwec.col) <- var.names 
-  return(cwec.col)
+                   twb.001,
+                   tas.monthly,
+                   tas.seasonal,
+                   tas.annual)
+
+  names(cwec.col) <- c("hdd",
+                       "cdd", 
+                       "txxETCCDI",
+                       "tnnETCCDI",
+                       "tasmax.annual_quantile_975",
+                       "tasmin.annual_quantile_010",
+                       "wetbulb.annual_quantile_975",
+                       "wetbulb.annual_quantile_010",
+                       'tas_jan','tas_feb','tas_mar',
+                       'tas_apr','tas_may','tas_jun',
+                       'tas_jul','tas_aug','tas_sep',
+                       'tas_oct','tas_nov','tas_dec',
+                       'tas_win','tas_spr','tas_sum',
+                       'tas_fal','tas_ann')                      
+  re.ix <- sapply(var.names,function(x,y){which(y %in% x)},names(cwec.col))
+  return(cwec.col[re.ix])
 }
 
 ##------------------------------------------------------------------------------
@@ -183,10 +166,12 @@ get_gcm_directory <- function(var.info,gcm,base.dir) {
 
   if (grepl('wetbulb',var.info$name))
     gcm.dir <- paste0('/storage/data/climate/downscale/CMIP5/building_code/',gcm,'/climatologies/')  
+
   return(gcm.dir)
 }
 
 ##------------------------------------------------------------------------------
+
 calc_gcm_stats <- function(var.info,coords,scenario,model.list,
                            check.dir,base.dir) {
 
@@ -211,59 +196,46 @@ calc_gcm_stats <- function(var.info,coords,scenario,model.list,
   return(val.row)
 }
 
-##---==-=
-old_calc_gcm_stats <- function(coords,scenario,model.list,
-                           check.dir,base.dir) {
+##------------------------------------------------------------------------------
+
+calc_gcm_tas_stats <- function(coords,scenario,model.list,
+                               base.dir) {
+
+  intervals <- c('1971-2000','2011-2040','2041-2070','2071-2100')
 
   ##GCM Component
-  flag <- check_for_gcm_data(coords[1],coords[2],check.dir,'ACCESS1-0',scenario)
-
-  hdd.vals <- matrix(NA,nrow=length(model.list),ncol=4)
-  cdd.vals <- matrix(NA,nrow=length(model.list),ncol=4)
-  txx.vals <- matrix(NA,nrow=length(model.list),ncol=4)
-  tnn.vals <- matrix(NA,nrow=length(model.list),ncol=4)
-  tx975.vals <- matrix(NA,nrow=length(model.list),ncol=4)
-  tn010.vals <- matrix(NA,nrow=length(model.list),ncol=4)
-
-  wb975.vals <- matrix(NA,nrow=length(model.list),ncol=4)
-  wb010.vals <- matrix(NA,nrow=length(model.list),ncol=4)
-
+  vals <- array(NA,c(length(model.list),4,17))
+  
   for (g in seq_along(model.list)) {
-    gcm <- model.list[g]
-    print(gcm)
-    dd.dir <- paste0(base.dir,gcm,'/rcp85/degree_days/climatologies/')
-    hdd.vals[g,] <- get_var_clims('hdd','annual',dd.dir,coords)
-    cdd.vals[g,] <- get_var_clims('cdd','annual',dd.dir,coords)
+     gcm <- model.list[g]
+     seas.dir <- paste0(base.dir,gcm,'/rcp85/seasonal/climatologies/')
+     mon.dir <- paste0(base.dir,gcm,'/rcp85/monthly/climatologies/')
+     ann.dir <- paste0(base.dir,gcm,'/rcp85/annual/climatologies/')
 
-    clim.dir <- paste0(base.dir,gcm,'/rcp85/climdex/climatologies/')
-    txx.vals[g,] <- get_var_clims('txxETCCDI','annual',clim.dir,coords)
-    tnn.vals[g,] <- get_var_clims('tnnETCCDI','annual',clim.dir,coords)
+     ##print(gcm)
+     for (j in seq_along(intervals)) {
+        mon.files <- list.files(path=mon.dir,pattern='tas_monthly')
+        mon.file <- mon.files[grep(intervals[j],mon.files)]
+        vals[g,j,1:12] <- retrieve_closest_cell(coords[1],coords[2],'tas',mon.dir,mon.file)
 
-    quant.dir <- paste0(base.dir,gcm,'/rcp85/annual_quantiles/climatologies/')
-    tx975.vals[g,] <- get_var_clims('tasmax','annual_quantile_975',quant.dir,coords)
-    tn010.vals[g,] <- get_var_clims('tasmin','annual_quantile_010',quant.dir,coords)
+        seas.files <- list.files(path=seas.dir,pattern='tas_seasonal')
+        seas.file <- seas.files[grep(intervals[j],seas.files)]
+        vals[g,j,13:16] <- retrieve_closest_cell(coords[1],coords[2],'tas',seas.dir,seas.file)
 
-    if (gcm == 'CCSM4' | gcm == 'MPI-ESM-LR') {
-      wb975.vals[g,] <- wb010.vals[g,] <- rep(NA,4)
-    } else {
-      wbt.dir <- paste0('/storage/data/climate/downscale/CMIP5/building_code/',gcm,'/climatologies/')  
-      wb975.vals[g,] <- get_var_clims('wetbulb','annual_quantile_975',wbt.dir,coords)-273
-      wb010.vals[g,] <- get_var_clims('wetbulb','annual_quantile_010',wbt.dir,coords)-273
-    }
+        ann.files <- list.files(path=ann.dir,pattern='tas_average_annual')
+        ann.file <- ann.files[grep(intervals[j],ann.files)]
+        vals[g,j,17] <- retrieve_closest_cell(coords[1],coords[2],'tas',ann.dir,ann.file)
+     }
   }
-  hdd.row <- make_table_row(hdd.vals,0)
-  cdd.row <- make_table_row(cdd.vals,0)
-  txx.row <- make_table_row(txx.vals,1)
-  tnn.row <- make_table_row(tnn.vals,1)
-  tx975.row <- make_table_row(tx975.vals,1)
-  tn010.row <- make_table_row(tn010.vals,1)
-  wb975.row <- make_table_row(wb975.vals,1) 
-  wb010.row <- make_table_row(wb010.vals,1)
+  rv <- get.round.val('tas')
+  val.row <- matrix('A',nrow=17,ncol=13)
+  for (k in 1:17) {
+     val.row[k,] <- make_table_row(vals[,,k],rv)
+  }
 
-  all.rows <- rbind(hdd.row,cdd.row,txx.row,tnn.row,
-                    tx975.row,tn010.row,wb975.row,wb010.row)
-  return(all.rows)
+  return(val.row)
 }
+
 
 ##------------------------------------------------------------------------------
 
@@ -273,98 +245,150 @@ make_table_row <- function(data.vals,rv) {
   anoms.2020s <- data.vals[,2]-data.vals[,1]
   anoms.2050s <- data.vals[,3]-data.vals[,1]
   anoms.2080s <- data.vals[,4]-data.vals[,1]
-  rv <- 0
+  ##rv <- 0
   val.row <- c(round(val.past,rv),
-               round(mean(anoms.2020s,na.rm=T),rv),
-               paste0(' (',round(quantile(anoms.2020s,0.1,na.rm=T),rv),' to ',round(quantile(anoms.2020s,0.9,na.rm=T),rv),')'),
+
                round(mean(data.vals[,2],na.rm=T),rv),
                paste0(' (',round(quantile(data.vals[,2],0.1,na.rm=T),rv),' to ',round(quantile(data.vals[,2],0.9,na.rm=T),rv),')'),
-               round(mean(anoms.2050s,na.rm=T),rv),
-               paste0(' (',round(quantile(anoms.2050s,0.1,na.rm=T),rv),' to ',round(quantile(anoms.2050s,0.9,na.rm=T),rv),')'), 
+               round(mean(anoms.2020s,na.rm=T),rv),
+               paste0(' (',round(quantile(anoms.2020s,0.1,na.rm=T),rv),' to ',round(quantile(anoms.2020s,0.9,na.rm=T),rv),')'),
+
                round(mean(data.vals[,3],na.rm=T),rv),
                paste0(' (',round(quantile(data.vals[,3],0.1,na.rm=T),rv),' to ',round(quantile(data.vals[,3],0.9,na.rm=T),rv),')'),
-               round(mean(anoms.2080s,na.rm=T),rv),
-               paste0(' (',round(quantile(anoms.2080s,0.1,na.rm=T),rv),' to ',round(quantile(anoms.2080s,0.9,na.rm=T),rv),')'),
+               round(mean(anoms.2050s,na.rm=T),rv),
+               paste0(' (',round(quantile(anoms.2050s,0.1,na.rm=T),rv),' to ',round(quantile(anoms.2050s,0.9,na.rm=T),rv),')'), 
+
                round(mean(data.vals[,4],na.rm=T),rv),
-               paste0(' (',round(quantile(data.vals[,4],0.1,na.rm=T),rv),' to ',round(quantile(data.vals[,4],0.9,na.rm=T),rv),')'))
+               paste0(' (',round(quantile(data.vals[,4],0.1,na.rm=T),rv),' to ',round(quantile(data.vals[,4],0.9,na.rm=T),rv),')'),
+               round(mean(anoms.2080s,na.rm=T),rv),
+               paste0(' (',round(quantile(anoms.2080s,0.1,na.rm=T),rv),' to ',round(quantile(anoms.2080s,0.9,na.rm=T),rv),')'))
   return(val.row)
 }
 
 ##------------------------------------------------------------------------------
   ##Formatted Table
-make_formated_stats_table <- function(var.list,cwec.site,gcm.site.list,cwec.offset,gcm.offset.list) {
+make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheets.offset,
+                                      method,rlen,write.dir) {
+
+  description <- c("This file contains summary statistics for the ",
+                   paste0(nearest,"CWEC2016 Weather File."),
+                   "A description of each variable can be seen by hovering over the variable name in ",
+                   "Column A. The 'Past (TMY)' column summarizes the data from",
+                   paste0("CAN_BC_",nearest,"_CWEC2016.epw"),
+                   "while the remaining columns summarize future shifted values (i.e. data from files:",
+                   paste0("2020s_CAN_BC_",nearest,"_CWEC2016.epw"),
+                   paste0("2050s_CAN_BC_",nearest,"_CWEC2016.epw"),
+                   paste0("2080s_CAN_BC_",nearest,"_CWEC2016.epw)."))
+  if (!is.null(sheets.offset)) {
+     description <- c(description," ",
+                      "The 'Adjusted Weather File Station' tab of this file contains past and future-shifted",
+                      "versions of the same file but with temperatures adjusted using the difference between",
+                      paste0("the historical climatology of ",nearest," and ",site),
+                      "according to average PRISM temperatures. For more information about the high",
+                      "resolution PRISM climatology see:",
+                      "https://www.pacificclimate.org/data/prism-climatology-and-monthly-timeseries-portal")
+  }
+                      
 
   sorted.vars <- filter.input.variables(var.list)
   row.locs <- find.row.locations(sorted.vars)
-  
+  desc.start <- tail(unlist(row.locs$derived),1)+3
   wb <- createWorkbook()
-  addWorksheet(wb, "Requested Site (Offset)")
-  setColWidths(wb, sheet = 1, cols = 1:15, widths = 14) ##Set fixed width
-  create.frozen.top.pane(wb,sheet=1)
-  create.title.panes(wb,sheet=1,var.name='tas',start.row=row.locs$tas[[1]][1])
-  write.variables(wb,sheet=1,sorted.vars$tas,row.locs$tas,'tas',cwec.offset,gcm.offset.list)
-  freezePane(wb,sheet=1,firstActiveCol=2,firstActiveRow=3)
 
-  addWorksheet(wb, "Weather File Site")
-  setColWidths(wb, sheet = 2, cols = 1:15, widths = 14) ##Set fixed width
-  create.frozen.top.pane(wb,sheet=2)
-  create.title.panes(wb,sheet=2,var.name='tas',start.row=row.locs$tas[[1]][1])
-  write.variables(wb,sheet=2,sorted.vars$tas,row.locs$tas,'tas',cwec.site,gcm.site.list)
-  freezePane(wb,sheet=2,firstActiveCol=2,firstActiveRow=3)
-  saveWorkbook(wb, paste0('/storage/home/ssobie/general/assessment_tables/downtown_victoria_variable_table_rcp85.xlsx'), overwrite = TRUE)
+  addWorksheet(wb, "Weather File Station")
+  sheet <- 1
+  setColWidths(wb, sheet = sheet, cols = 1:14, widths = c(30,rep(14,13))) ##Set fixed width
+  create.frozen.top.pane(wb,sheet=sheet,site=nearest)
+  ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
+  write.variables(wb,sheet=sheet,sorted.vars$derived,row.locs$derived,'derived',sheets.closest)
+  textstyle <- createStyle(fgFill = 'white', halign = "LEFT",
+                           fontColour = "black",bgFill='white')
+  titlestyle <- createStyle(fgFill = 'white', halign = "LEFT",textDecoration = "Bold",
+                           fontColour = "black",bgFill='white')
+
+  writeData(wb, sheet=sheet, 'File Description', startRow = desc.start-1, startCol = 2, headerStyle = titlestyle,
+            colNames=FALSE)
+  addStyle(wb,sheet=sheet,titlestyle,rows=tail(unlist(row.locs$derived),1)+2,cols=2,gridExpand=FALSE,stack=FALSE)
+
+##  writeData(wb, sheet=sheet, matrix(' ',nrow=length(description),ncol=4), startRow= desc.start, startCol = 2, headerStyle = textstyle,
+##            colNames=FALSE,borders="surrounding",borderStyle='medium',borderColour='black')
+  writeData(wb, sheet=sheet, description, startRow = desc.start, startCol = 2, headerStyle = textstyle,
+            colNames=FALSE)
+  addStyle(wb,sheet=sheet,textstyle,rows=seq(desc.start,by=1,length.out=length(description)),cols=2:6,gridExpand=TRUE,stack=TRUE)
+  freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
+
+  if (!is.null(sheets.offset)) {
+     offset.description <- c(paste0("This file contains summary statistics for the ",nearest),
+                             "CWEC 2016 Weather File adjusted for the temperature difference between the station and",
+                             paste0(site," according to average PRISM temperatures."),
+                             "For more information about the high resolution PRISM climatology see:",
+                             "https://www.pacificclimate.org/data/prism-climatology-and-monthly-timeseries-portal",
+                             "A description of each variable can be seen by hovering over the variable name in Column A.",
+                             "The 'Past (TMY)' column summarizes the data from",
+                             paste0("CAN_BC_",site,"-offset-from-",nearest,"_CWEC2016.epw"),
+                             "while the remaining columns summarize future shifted values (i.e. data from files:",
+                             paste0("2020s_CAN_BC_",site,"-offset-from-",nearest,"_CWEC2016.epw"),
+                             paste0("2050s_CAN_BC_",site,"-offset-from-",nearest,"_CWEC2016.epw"),
+                             paste0("2080s_CAN_BC_",site,"-offset-from-",nearest,"_CWEC2016.epw)."),
+                             "The other tab of this file contains past and future-shifted versions at ",
+                             paste0(nearest," that have NOT been corrected for the difference in climatology between"),
+                             paste0("it and ",site,"."))
+
+     addWorksheet(wb, "Adjusted Weather File Station")
+     sheet <- 2
+     setColWidths(wb, sheet = sheet, cols = 1:14, widths = c(30,rep(14,13))) ##Set fixed width
+     create.frozen.top.pane(wb,sheet=sheet,site=site)
+     ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
+     write.variables(wb,sheet=sheet,sorted.vars$derived,row.locs$derived,'derived',sheets.offset)
+     writeData(wb, sheet=sheet, 'File Description', startRow = tail(unlist(row.locs$derived),1)+2, startCol = 2, headerStyle = titlestyle,
+            colNames=FALSE)
+     addStyle(wb,sheet=sheet,titlestyle,rows=tail(unlist(row.locs$derived),1)+2,cols=2,gridExpand=FALSE,stack=FALSE)
+     writeData(wb, sheet=sheet, offset.description, startRow = tail(unlist(row.locs$derived),1)+3, startCol = 2, headerStyle = textstyle,
+            colNames=FALSE)
+     addStyle(wb,sheet=sheet,textstyle,rows=seq(desc.start,by=1,length.out=length(description)),cols=2:7,gridExpand=TRUE,stack=TRUE)
+     freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
+  
+     ##TAS Climatologies Tab
+     addWorksheet(wb, "Mean Temperature Climatologies") ##"Requested Site (CWEC)")
+     sheet <- 3
+     setColWidths(wb, sheet = sheet, cols = 1:14, widths = c(30,rep(14,13))) ##Set fixed width
+     create.frozen.top.pane(wb,sheet=sheet,site=site)
+     ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
+     write.variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.closest)
+     freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
+  } else {
+     ##TAS Climatologies Tab
+     addWorksheet(wb, "Mean Temperature Climatologies") ##"Requested Site (CWEC)")
+     sheet <- 2
+     setColWidths(wb, sheet = sheet, cols = 1:14, widths = c(30,rep(14,13))) ##Set fixed width
+     create.frozen.top.pane(wb,sheet=sheet,site=site)
+     ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
+     write.variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.closest)
+     freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
+  }
+
+
+  #Old sheets using GCM data
+  if (1==0) {
+   addWorksheet(wb, "BCCAQv2_GCMs at Wx Location") ##"Models at Nearest Weather File")
+   sheet <- 2
+   setColWidths(wb, sheet = sheet, cols = 1:14, widths = 14) ##Set fixed width
+   create.frozen.top.pane(wb,sheet=sheet,site=nearest)
+   ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
+   write.variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.closest$model)
+   freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
+
+   addWorksheet(wb, "BCCAQv2_GCMs at adjusted site") ##"Requested Site (Model)")
+   sheet <- 4
+   setColWidths(wb, sheet = sheet, cols = 1:14, widths = 14) ##Set fixed width
+   create.frozen.top.pane(wb,sheet=sheet,site=site)
+   ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
+   write.variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.offset$model)
+   freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
+  }
+
+  ##saveWorkbook(wb, paste0('/storage/data/projects/rci/weather_files/wx_summary_tables/',site,'_Summary_rcp85.xlsx'), overwrite = TRUE)
+  saveWorkbook(wb, paste0(write.dir,site,'_Summary_rcp85.xlsx'), overwrite = TRUE)
+
 }
-
-
-
-##----------------------------------------------------------------------- 
-
-##***********************************************************************************
-##------------------------------------------------------------------------------------
-
-
-epw.dir <- '/storage/data/projects/rci/weather_files/wx_files/'
-offset.dir <- '/storage/data/projects/rci/weather_files/wx_files/offsets/'
-write.dir <- '/storage/data/projects/rci/weather_files/wx_files/stats/'
-
-full.list <- c('ACCESS1-0','CanESM2','CCSM4','CNRM-CM5','CSIRO-Mk3-6-0','GFDL-ESM2G',
-              'HadGEM2-CC','HadGEM2-ES','inmcm4','MIROC5','MPI-ESM-LR','MRI-CGCM3')
-sub.list <- c('ACCESS1-0','CanESM2','CNRM-CM5','CSIRO-Mk3-6-0','GFDL-ESM2G',
-              'HadGEM2-CC','HadGEM2-ES','inmcm4','MIROC5','MRI-CGCM3')
-
-var.list <- list(list(name='hdd',type='annual',title='HDD'),     
-                 list(name='cdd',type='annual',title='CDD'),
-                 list(name='txxETCCDI',type='annual',title='TXX'),
-                 list(name='tnnETCCDI',type='annual',title='TNN'),
-                 list(name='tasmax.annual_quantile_975',type='annual',title='TX 97.5%'),
-                 list(name='tasmin.annual_quantile_010',type='annual',title='TN 1.0%'),
-                 list(name='wetbulb.annual_quantile_975',type='annual',title='WB 97.5%'),
-                 list(name='wetbulb.annual_quantile_010',type='annual',title='WB 1.0%'))
-var.names <- unlist(lapply(var.list,function(x){return(x$name)}))
- 
-base.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/high_res_downscaling/bccaq_gcm_bc_subset/'
-check.dir <- paste0(base.dir,'ACCESS1-0/rcp85/annual/climatologies/')
-
-tmp.dir <- '/local_temp/ssobie/epw/'
-if (!file.exists(tmp.dir)) {
-   dir.create(tmp.dir,recursive=TRUE)
-}
-
-scenario <- 'rcp85'
-offset.epw.file <- 'CAN_BC_DowntownVictoria_offset_from_VICTORIA-GONZALES-CS_1018611_CWEC.epw'
-present.epw.file <- 'CAN_BC_VICTORIA-GONZALES-CS_1018611_CWEC.epw'
-
-cwec.offset <- calc_cwec_values(offset.epw.file,offset.dir,var.names)
-coords <- get_epw_coordinates(offset.dir,offset.epw.file)
-gcm.offset.list <- lapply(var.list,calc_gcm_stats,coords,scenario,full.list,check.dir,base.dir)
-names(gcm.offset.list) <- var.names
-
-cwec.site <- calc_cwec_values(present.epw.file,epw.dir,var.names)
-coords <- get_epw_coordinates(epw.dir,present.epw.file)
-gcm.site.list <- lapply(var.list,calc_gcm_stats,coords,scenario,full.list,check.dir,base.dir)
-names(gcm.site.list) <- var.names
-
-
-##Send to xlsx means of writing
-make_formated_stats_table(var.list,cwec.offset,gcm.offset.list,
-                                   cwec.site,gcm.site.list)
 

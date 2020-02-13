@@ -77,7 +77,7 @@ morph_sky_cover <- function(epw.series,alpha) {
    return(morphed.series)
 }
 
-get_morph_function <- function(epw.name) {
+get_stretch_function <- function(epw.name) {
    fxn <- list(direct_normal_radiation=morph_direct_normal,
                relative_humidity=morph_relative_humidity,
                atmospheric_station_pressure=morph_by_stretch,
@@ -93,9 +93,9 @@ get_morph_function <- function(epw.name) {
 ##------------------------------------------------------------------------------
 ##Morph Dry Bulb Temperature using Belcher method
 
-morph_dry_bulb_temp <- function(epw.present,lon,lat,gcm.list,gcm.dir,scenario,interval,
-                                method,rlen=NULL,agg.fxn=mean) {
-
+generate_dry_bulb_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,gcm.dir,scenario,interval,
+                                   method,rlen=NULL,agg.fxn=mean) {
+   
    tas.ix <- get_field_index('dry_bulb_temperature')
    epw.tas <- epw.present$data[,tas.ix]
    dates <- as.Date(paste('1999',sprintf('%02d',epw.present$data[,2]),sprintf('%02d',epw.present$data[,3]),sep='-'))
@@ -124,6 +124,7 @@ morph_dry_bulb_temp <- function(epw.present,lon,lat,gcm.list,gcm.dir,scenario,in
 
    for (g in seq_along(gcm.list)) {
       gcm <- gcm.list[g]
+
       alpha.files <- list.files(path=gcm.dir,pattern=paste0('alpha_tasmax_tasmin_',gcm))
       alpha.int.file <- alpha.files[grep(interval,alpha.files)]
 
@@ -131,13 +132,15 @@ morph_dry_bulb_temp <- function(epw.present,lon,lat,gcm.list,gcm.dir,scenario,in
                                input.file=alpha.int.file,read.dir=gcm.dir)
       alpha.tx.tn.agg <- make_average_series(alpha.tx.tn$data,alpha.tx.tn$time,
                                           method,rlen,agg.fxn)
- 
+      alphas[g,] <- alpha.tx.tn.agg                                     
+
       delta.ts.files <- list.files(path=gcm.dir,pattern=paste0('delta_tas_',gcm))
       delta.ts.int.file <- delta.ts.files[grep(interval,delta.ts.files)]
       delta.ts <- read_cell(var.name='tas',lonc=lon,latc=lat,
                             input.file=delta.ts.int.file,read.dir=gcm.dir)
       delta.ts.agg <- make_average_series(delta.ts$data,delta.ts$time,
                                           method,rlen,agg.fxn)
+      deltas[g,] <- delta.ts.agg
 
       ##
       alpha <- alpha.tx.tn.agg / (epw.agg.max - epw.agg.min)
@@ -156,8 +159,8 @@ morph_dry_bulb_temp <- function(epw.present,lon,lat,gcm.list,gcm.dir,scenario,in
 ##------------------------------------------------------------------------------
 ##Morph Dewpoint Temperature using Belcher method
 
-morph_dew_point_temp <- function(epw.present,lon,lat,gcm.list,gcm.dir,scenario,interval,
-                                 method,rlen=NULL,agg.fxn=mean) {
+generate_dew_point_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,gcm.dir,scenario,interval,
+                                   method,rlen=NULL,agg.fxn=mean) {
 
    dwpt.ix <- get_field_index('dew_point_temperature')
    epw.dwpt <- epw.present$data[,dwpt.ix]
@@ -205,7 +208,7 @@ morph_dew_point_temp <- function(epw.present,lon,lat,gcm.list,gcm.dir,scenario,i
 }
 
 ##------------------------------------------------------------------------------
-generate_horizontal_radiation <- function(epw.present,lon,lat,gcm.list,gcm.dir,scenario,interval,
+generate_horizontal_radiation <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,gcm.dir,scenario,interval,
                                           method,rlen=NULL,agg.fxn=mean) {
 
    ghr.ix <- get_field_index('global_horizontal_radiation')
@@ -244,12 +247,13 @@ generate_horizontal_radiation <- function(epw.present,lon,lat,gcm.list,gcm.dir,s
    ens.morphed.diffuse <- apply(morphed.diffuse,2,mean)
    epw.present$data[,ghr.ix] <- round(ens.morphed.global,0)
    epw.present$data[,dhr.ix] <- round(ens.morphed.diffuse,0)
-   rv <- list(global=morphed.global,diffuse=morphed.diffuse)
+   ##rv <- list(global=morphed.global,diffuse=morphed.diffuse)
+   rv <- switch(epw.var,
+                   global_horizontal_radiation=morphed.global,
+                   diffuse_horizontal_radiation=morphed.diffuse)
+   
    return(rv) ##epw.present)   
 }
-
-##------------------------------------------------------------------------------
-
 
 ##------------------------------------------------------------------------------
 ##Morph by stretching using Belcher method
@@ -258,7 +262,7 @@ generate_stretched_series <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.li
                                       method,rlen=NULL,agg.fxn=mean) {
 
    epw.ix <- get_field_index(epw.var)
-   morph.fxn <- get_morph_function(epw.var)
+   morph.fxn <- get_stretch_function(epw.var)
    epw.series <- epw.present$data[,epw.ix]
    dates <- as.Date(paste('1999',sprintf('%02d',epw.present$data[,2]),sprintf('%02d',epw.present$data[,3]),sep='-'))
    
