@@ -124,10 +124,10 @@ generate_dry_bulb_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,
 
    for (g in seq_along(gcm.list)) {
       gcm <- gcm.list[g]
-
       alpha.files <- list.files(path=gcm.dir,pattern=paste0('alpha_tasmax_tasmin_',gcm))
       alpha.int.file <- alpha.files[grep(interval,alpha.files)]
-
+      
+      
       alpha.tx.tn <- read_cell(var.name='alpha_tas',lonc=lon,latc=lat,
                                input.file=alpha.int.file,read.dir=gcm.dir)
       alpha.tx.tn.agg <- make_average_series(alpha.tx.tn$data,alpha.tx.tn$time,
@@ -270,6 +270,7 @@ generate_stretched_series <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.li
 
    for (g in seq_along(gcm.list)) {
       gcm <- gcm.list[g]
+      print(gcm)
       alpha.files <- list.files(path=gcm.dir,pattern=paste0('alpha_',gcm.var,'_',gcm))
       alpha.int.file <- alpha.files[grep(interval,alpha.files)]
 

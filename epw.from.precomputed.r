@@ -178,9 +178,16 @@ create_cwec_table_sheets <- function(epw.file,intervals,lon,lat,
                                      gcm.list,variable.list,stats.list,
                                      tmp.dir,scenario,
                                      method,rlen,write.dir) {
+   coords <- c(lon,lat)
+   base.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/high_res_downscaling/bccaq_gcm_bc_subset/'
+   gcm.site.tas  <- calc_gcm_tas_stats(coords,scenario,gcm.list,base.dir)
 
    pef.split <- strsplit(epw.file$file,'_')[[1]]
    epw.present <- read.epw.file(epw.file$dir,epw.file$file) 
+   dates <- paste(sprintf('%04d',epw.present$data[,1]),
+                  sprintf('%02d',epw.present$data[,2]),sep='-')
+   tmy.years <- substr(unique(dates),1,4)
+
    stats.names <- unlist(lapply(stats.list,function(x){return(x$name)}))
    for (interval in intervals) {
       morphed.gcm.list <- morph_epw_by_each_gcm(epw.file=epw.file,
@@ -223,18 +230,19 @@ create_cwec_table_sheets <- function(epw.file,intervals,lon,lat,
       cwec.entries[[v]] <- make_table_row(vals,rv)
    } 
    names(cwec.entries) <- stats.names
-   coords <- c(lon,lat)
-   base.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/high_res_downscaling/bccaq_gcm_bc_subset/'
+
+
    check.dir <- paste0(base.dir,'ACCESS1-0/rcp85/annual/climatologies/')
 
-   ###tas.flag <- unlist(lapply(stats.list,function(x){grepl('tas_',x$name)}))
-   ###gcm.site.list <- lapply(stats.list[!tas.flag],calc_gcm_stats,coords,scenario,gcm.list,check.dir,base.dir)
-   ###gcm.site.tas  <- calc_gcm_tas_stats(coords,scenario,gcm.list,
-   ###                                    base.dir)
+   ##tas.flag <- unlist(lapply(stats.list,function(x){grepl('tas_',x$name)}))
+   ##gcm.site.list <- lapply(stats.list[!tas.flag],calc_gcm_stats,coords,scenario,gcm.list,check.dir,base.dir)
+
+
    ###names(gcm.site.list) <- stats.names
-   ###rv <- list(cwec=cwec.entries,
-   ###           model=gcm.site.list)
-   rv <- cwec.entries
+   ###rv <- cwec.entries
+   rv <- list(cwec=cwec.entries,
+              model=gcm.site.tas,
+              years=tmy.years)  
    return(rv)
 }
 
@@ -246,7 +254,7 @@ create_cwec_table_sheets <- function(epw.file,intervals,lon,lat,
 ##---------------------------------------
 ##Info passed in from submission script
 scenario <- 'rcp85'
-new.location <- 'Whistler_Cheakamus_Lake_Rd'
+new.location <- 'Whistler_TEST'
 
 lon <- -123.038322 ## -123.31 ###
 lat <- 50.077508 ##48.5 ###
@@ -329,20 +337,18 @@ intervals <- c('2011-2040','2041-2070','2071-2100')
 ##PRISM climatologies
 
 epw.files <- generate_prism_offset(lon,lat,epw.dir,prism.dir,wx.morph.dir,new.location)
-browser()
+
 nearest.epw <- strsplit(epw.files$closest$file,'_')[[1]][3]
 nearest.epw.coords <- epw.files$closest$coords
 n.lon <- nearest.epw.coords[1]
 n.lat <- nearest.epw.coords[2]
-
-
 
 ##--------------------------------------
 ##Copy the morphing factors to temporary 
 ##directory
 print('Copying EPW factors to tmp (31Gb)')
 ##if (!file.exists(tmp.dir)) {
-  file.copy(from=morph.dir,to=tmp.dir,recursive=TRUE)
+##  file.copy(from=morph.dir,to=tmp.dir,recursive=TRUE)  ##Change to omit 1971-2000
 ##}
 
 epw.coords <- get_epw_coordinates(epw.files$closest$dir,epw.files$closest$file)

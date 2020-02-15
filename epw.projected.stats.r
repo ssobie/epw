@@ -8,7 +8,7 @@ source('/storage/home/ssobie/code/repos/epw/epw.stats.formatted.table.functions.
 check_for_gcm_data <- function(lonc,latc,gcm.dir,gcm,scenario) {
 
   tasmax.files <- list.files(path=gcm.dir,pattern="tasmax_average_annual_climatology")
-  tasmax.file <- tasmax.files[grep('1971-2000',tasmax.files)]
+  tasmax.file <- tasmax.files[grep('1998-2014',tasmax.files)]
   nc <- nc_open(paste0(gcm.dir,tasmax.file))
   lon <- ncvar_get(nc,'lon')
   lat <- ncvar_get(nc,'lat')
@@ -57,7 +57,7 @@ retrieve_closest_cell <- function(lonc,latc,var.name,file.dir,file.name) {
 
 get_var_clims <- function(var.info,var.dir,coords) {
   
-  intervals <- c('1971-2000','2011-2040','2041-2070','2071-2100')
+  intervals <- c('1998-2014','2011-2040','2041-2070','2071-2100')
   var.cell <- rep(NA,length(intervals))
   var.ref <- var.info$name
   if (grepl('\\.',var.info$name)) {
@@ -167,6 +167,8 @@ get_gcm_directory <- function(var.info,gcm,base.dir) {
   if (grepl('wetbulb',var.info$name))
     gcm.dir <- paste0('/storage/data/climate/downscale/CMIP5/building_code/',gcm,'/climatologies/')  
 
+  
+
   return(gcm.dir)
 }
 
@@ -201,39 +203,40 @@ calc_gcm_stats <- function(var.info,coords,scenario,model.list,
 calc_gcm_tas_stats <- function(coords,scenario,model.list,
                                base.dir) {
 
-  intervals <- c('1971-2000','2011-2040','2041-2070','2071-2100')
+  intervals <- c('1971-2000','1998-2014')
 
   ##GCM Component
-  vals <- array(NA,c(length(model.list),4,17))
+  vals <- array(NA,c(length(model.list),length(intervals),17))
   
   for (g in seq_along(model.list)) {
      gcm <- model.list[g]
+     print(gcm)
      seas.dir <- paste0(base.dir,gcm,'/rcp85/seasonal/climatologies/')
      mon.dir <- paste0(base.dir,gcm,'/rcp85/monthly/climatologies/')
      ann.dir <- paste0(base.dir,gcm,'/rcp85/annual/climatologies/')
 
      ##print(gcm)
      for (j in seq_along(intervals)) {
+        print(intervals[j])
         mon.files <- list.files(path=mon.dir,pattern='tas_monthly')
         mon.file <- mon.files[grep(intervals[j],mon.files)]
         vals[g,j,1:12] <- retrieve_closest_cell(coords[1],coords[2],'tas',mon.dir,mon.file)
-
         seas.files <- list.files(path=seas.dir,pattern='tas_seasonal')
         seas.file <- seas.files[grep(intervals[j],seas.files)]
         vals[g,j,13:16] <- retrieve_closest_cell(coords[1],coords[2],'tas',seas.dir,seas.file)
-
         ann.files <- list.files(path=ann.dir,pattern='tas_average_annual')
         ann.file <- ann.files[grep(intervals[j],ann.files)]
         vals[g,j,17] <- retrieve_closest_cell(coords[1],coords[2],'tas',ann.dir,ann.file)
      }
   }
   rv <- get.round.val('tas')
-  val.row <- matrix('A',nrow=17,ncol=13)
-  for (k in 1:17) {
-     val.row[k,] <- make_table_row(vals[,,k],rv)
-  }
+  ##val.row <- matrix('A',nrow=17,ncol=13)
+  ##for (k in 1:17) {
+  ##   val.row[k,] <- make_table_row(vals[,,k],rv)
+  ##}
+  vals.ens <- round(t(apply(vals,c(2,3),mean)),rv)
 
-  return(val.row)
+  return(vals.ens)
 }
 
 
@@ -300,7 +303,8 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
   setColWidths(wb, sheet = sheet, cols = 1:14, widths = c(30,rep(14,13))) ##Set fixed width
   create.frozen.top.pane(wb,sheet=sheet,site=nearest)
   ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
-  write.variables(wb,sheet=sheet,sorted.vars$derived,row.locs$derived,'derived',sheets.closest)
+  write_variables(wb,sheet=sheet,sorted.vars$derived,row.locs$derived,'derived',sheets.closest$cwec,
+                     data.cols=2:14,highlights=c(5,6,9,10,13,14))
   textstyle <- createStyle(fgFill = 'white', halign = "LEFT",
                            fontColour = "black",bgFill='white')
   titlestyle <- createStyle(fgFill = 'white', halign = "LEFT",textDecoration = "Bold",
@@ -330,7 +334,7 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
                              paste0("2020s_CAN_BC_",site,"-offset-from-",nearest,"_CWEC2016.epw"),
                              paste0("2050s_CAN_BC_",site,"-offset-from-",nearest,"_CWEC2016.epw"),
                              paste0("2080s_CAN_BC_",site,"-offset-from-",nearest,"_CWEC2016.epw)."),
-                             "The other tab of this file contains past and future-shifted versions at ",
+                             "The first tab of this file contains past and future-shifted versions at ",
                              paste0(nearest," that have NOT been corrected for the difference in climatology between"),
                              paste0("it and ",site,"."))
 
@@ -339,7 +343,8 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
      setColWidths(wb, sheet = sheet, cols = 1:14, widths = c(30,rep(14,13))) ##Set fixed width
      create.frozen.top.pane(wb,sheet=sheet,site=site)
      ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
-     write.variables(wb,sheet=sheet,sorted.vars$derived,row.locs$derived,'derived',sheets.offset)
+     write_variables(wb,sheet=sheet,sorted.vars$derived,row.locs$derived,'derived',sheets.offset$cwec,
+                        data.cols=2:14,highlights=c(5,6,9,10,13,14))
      writeData(wb, sheet=sheet, 'File Description', startRow = tail(unlist(row.locs$derived),1)+2, startCol = 2, headerStyle = titlestyle,
             colNames=FALSE)
      addStyle(wb,sheet=sheet,titlestyle,rows=tail(unlist(row.locs$derived),1)+2,cols=2,gridExpand=FALSE,stack=FALSE)
@@ -347,25 +352,32 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
             colNames=FALSE)
      addStyle(wb,sheet=sheet,textstyle,rows=seq(desc.start,by=1,length.out=length(description)),cols=2:7,gridExpand=TRUE,stack=TRUE)
      freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
-  
-     ##TAS Climatologies Tab
-     addWorksheet(wb, "Mean Temperature Climatologies") ##"Requested Site (CWEC)")
+
      sheet <- 3
-     setColWidths(wb, sheet = sheet, cols = 1:14, widths = c(30,rep(14,13))) ##Set fixed width
-     create.frozen.top.pane(wb,sheet=sheet,site=site)
-     ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
-     write.variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.closest)
-     freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
+     sheets.tas <- sheets.offset
   } else {
-     ##TAS Climatologies Tab
-     addWorksheet(wb, "Mean Temperature Climatologies") ##"Requested Site (CWEC)")
      sheet <- 2
-     setColWidths(wb, sheet = sheet, cols = 1:14, widths = c(30,rep(14,13))) ##Set fixed width
-     create.frozen.top.pane(wb,sheet=sheet,site=site)
-     ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
-     write.variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.closest)
-     freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
+     sheets.tas <- sheets.closest
   }
+
+  ##TAS Climatologies Tab
+  ##Insert the TMY Years and model climatologies into the TAS rows
+  tas.flag <- unlist(lapply(var.list,function(x){grepl('tas_',x$name)}))  
+  tas.names <- var.list[tas.flag]
+  years <- c(sheets.tas$years,rep('NA',5))
+  for (t in 1:sum(tas.flag)) {
+     var.name <- tas.names[[t]]$name
+     line <- sheets.tas$cwec[[var.name]]
+     sheets.tas$cwec[[var.name]] <- append(line,values=c(years[t],sheets.tas$model[t,]),after=1)
+  }
+
+  addWorksheet(wb, "Mean Temperature Climatologies") ##"Requested Site (CWEC)")
+  setColWidths(wb, sheet = sheet, cols = 1:17, widths = c(30,rep(14,16))) ##Set fixed width
+  create_temp_climatologies_top_pane(wb,sheet=sheet,site=site)
+  ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
+  write_variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.tas$cwec,
+                              data.cols=2:17,highlights=c(8,9,12,13,16,17))
+  freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
 
 
   #Old sheets using GCM data
@@ -375,7 +387,7 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
    setColWidths(wb, sheet = sheet, cols = 1:14, widths = 14) ##Set fixed width
    create.frozen.top.pane(wb,sheet=sheet,site=nearest)
    ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
-   write.variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.closest$model)
+   write_variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.closest$model)
    freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
 
    addWorksheet(wb, "BCCAQv2_GCMs at adjusted site") ##"Requested Site (Model)")
@@ -383,12 +395,13 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
    setColWidths(wb, sheet = sheet, cols = 1:14, widths = 14) ##Set fixed width
    create.frozen.top.pane(wb,sheet=sheet,site=site)
    ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
-   write.variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.offset$model)
+   write_variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.offset$model)
    freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
   }
 
   ##saveWorkbook(wb, paste0('/storage/data/projects/rci/weather_files/wx_summary_tables/',site,'_Summary_rcp85.xlsx'), overwrite = TRUE)
   saveWorkbook(wb, paste0(write.dir,site,'_Summary_rcp85.xlsx'), overwrite = TRUE)
-
+  print(paste0(write.dir,site,'_Summary_rcp85.xlsx'))
+browser()
 }
 

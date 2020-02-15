@@ -9,8 +9,6 @@ library(openxlsx)
 
 get.units.pane <- function(var.name) {
   leg.label <- NA
-  if (grepl("(tas|txx|tnn|txn|tnx|tmax|tmin|dtr|wetbulb)", var.name))
-    leg.label <- '\u00B0C' ##rep('degC',13)
   if (grepl("(pr|rx|r10|r20|r9|RP|sdii|prcptot)", var.name))
     leg.label <- 'mm' ##rep('mm',13)
   if (grepl("(dd)", var.name))
@@ -21,6 +19,8 @@ get.units.pane <- function(var.name) {
     leg.label <- '\u00B0C' ##rep('degC',13)
   if (grepl("(r95sep|r95dist|r95days|r99days)", var.name))
     leg.label <- 'Days' ##rep('days',13)
+  if (grepl("(tas|txx|tnn|txn|tnx|tmax|tmin|dtr|wetbulb)", var.name))
+    leg.label <- '\u00B0C' ##rep('degC',13)
   return(leg.label)
 } 
 
@@ -109,7 +109,7 @@ annual.table <- function(var.name,scenario='rcp85',rp=NULL) {
 
 
 ##----------------------------------------------------------------------------------------
-write.variables <- function(wb,sheet,sorted.vars,row.locs,type,sheet.data) {
+write_variables <- function(wb,sheet,sorted.vars,row.locs,type,sheet.data,data.cols,highlights) {
   len <- length(sorted.vars)
   for (i in 1:len) {               
     var.info <- sorted.vars[[i]]
@@ -120,6 +120,7 @@ write.variables <- function(wb,sheet,sorted.vars,row.locs,type,sheet.data) {
     print(var.title)
     current.row <- row.locs[[i+1]]
     title.cell <- paste0(var.title,' (',get.units.pane(var.name),')')                             
+    print(title.cell)
     var.entry <- c(title.cell,sheet.data[[var.name]])
 
     s1 <- createStyle(fontSize = 12, fontColour = "black", textDecoration = c("BOLD"))
@@ -133,18 +134,15 @@ write.variables <- function(wb,sheet,sorted.vars,row.locs,type,sheet.data) {
                              border = "TopBottomLeftRight", fontColour = "black")                              
     writeData(wb, sheet=sheet, as.data.frame(t(var.entry)), startRow = current.row, startCol =1, headerStyle = datastyle,
               borders = "rows", borderStyle = "medium",colNames=FALSE)
-    addStyle(wb,sheet=sheet,datastyle,rows=current.row,cols=2:14,gridExpand=TRUE,stack=FALSE)
+    addStyle(wb,sheet=sheet,datastyle,rows=current.row,cols=data.cols,gridExpand=TRUE,stack=FALSE)
     addStyle(wb,sheet=sheet,hdstyle,rows=current.row,cols=1,gridExpand=TRUE,stack=FALSE)
 
     highlight <- createStyle(fgFill = 'lightyellow', halign = "CENTER", 
                              border = "TopBottomLeftRight", fontColour = "black")  
     ##addStyle(wb,sheet=sheet,highlight,rows=current.row,cols=2,gridExpand=FALSE,stack=FALSE)
-    addStyle(wb,sheet=sheet,highlight,rows=current.row,cols=5,gridExpand=FALSE,stack=FALSE)
-    addStyle(wb,sheet=sheet,highlight,rows=current.row,cols=6,gridExpand=FALSE,stack=FALSE)
-    addStyle(wb,sheet=sheet,highlight,rows=current.row,cols=9,gridExpand=FALSE,stack=FALSE)
-    addStyle(wb,sheet=sheet,highlight,rows=current.row,cols=10,gridExpand=FALSE,stack=FALSE)
-    addStyle(wb,sheet=sheet,highlight,rows=current.row,cols=13,gridExpand=FALSE,stack=FALSE)
-    addStyle(wb,sheet=sheet,highlight,rows=current.row,cols=14,gridExpand=FALSE,stack=FALSE)
+    for (h in highlights) { ##Add yellow shade for change columns
+       addStyle(wb,sheet=sheet,highlight,rows=current.row,cols=h,gridExpand=FALSE,stack=FALSE)
+    }
 
   }
      
@@ -180,6 +178,42 @@ create.frozen.top.pane <- function(wb,sheet,site) {
       writeData(wb, sheet=sheet, prct.header, startRow = 2, startCol = 1, headerStyle = fz1,
                 borders = "rows", borderStyle = "medium")
       addStyle(wb,sheet=sheet,fz1,rows=2,cols=1:14,gridExpand=FALSE,stack=FALSE)
+      ##freezePane(wb,sheet=sheet,firstActiveRow=3)
+}
+
+##-----------------------------------------------------------------------------------------
+create_temp_climatologies_top_pane <- function(wb,sheet,site) {
+
+      pane.titles <- list(site,'Past (TMY)',
+                              'TMY Year',
+                              'Model Past',
+                              'Model Past',
+                              '2020s Future',' ',
+                              '2020s Change',' ',
+                              '2050s Future',' ',
+                              '2050s Change',' ',
+                              '2080s Future',' ',
+                              '2080s Change',' ')
+
+      fz1 <- createStyle(fgFill = "gray94", halign = "CENTER", textDecoration = "Bold",
+                         border = "TopBottomLeftRight", fontColour = "black")
+      writeData(wb, sheet=sheet, pane.titles, startRow = 1, startCol = 1, headerStyle = fz1,
+                borders = "rows", borderStyle = "medium")
+      addStyle(wb,sheet=sheet,fz1,rows=1,cols=1:17,gridExpand=FALSE,stack=FALSE)
+      mergeCells(wb,sheet=sheet,cols=c(6,7),rows=1)
+      mergeCells(wb,sheet=sheet,cols=c(8,9),rows=1)
+      mergeCells(wb,sheet=sheet,cols=c(10,11),rows=1)
+      mergeCells(wb,sheet=sheet,cols=c(12,13),rows=1)
+      mergeCells(wb,sheet=sheet,cols=c(14,15),rows=1)
+      mergeCells(wb,sheet=sheet,cols=c(16,17),rows=1)
+      ##freezePane(wb,sheet=sheet,firstRow=TRUE)
+
+      prct.header <- list(' ',' ',' ','(1971-2000)','(1998-2014) ',
+                          'Average','10th%-90th%','Average','10th%-90th%','Average','10th%-90th%',
+                          'Average','10th%-90th%','Average','10th%-90th%','Average','10th%-90th%')          
+      writeData(wb, sheet=sheet, prct.header, startRow = 2, startCol = 1, headerStyle = fz1,
+                borders = "rows", borderStyle = "medium")
+      addStyle(wb,sheet=sheet,fz1,rows=2,cols=1:17,gridExpand=FALSE,stack=FALSE)
       ##freezePane(wb,sheet=sheet,firstActiveRow=3)
 }
 
