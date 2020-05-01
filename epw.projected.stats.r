@@ -195,6 +195,7 @@ calc_gcm_stats <- function(var.info,coords,scenario,model.list,
   }
   rv <- get.round.val(var.info$name)
   val.row <- make_table_row(vals,rv)
+
   return(val.row)
 }
 
@@ -211,22 +212,25 @@ calc_gcm_tas_stats <- function(coords,scenario,model.list,
   for (g in seq_along(model.list)) {
      gcm <- model.list[g]
      print(gcm)
-     seas.dir <- paste0(base.dir,gcm,'/rcp85/seasonal/climatologies/')
-     mon.dir <- paste0(base.dir,gcm,'/rcp85/monthly/climatologies/')
-     ann.dir <- paste0(base.dir,gcm,'/rcp85/annual/climatologies/')
+     clim.dir <- mon.dir <- ann.dir <- '/storage/data/climate/downscale/BCCAQ2/bccaqv2_climatologies/'
+     gcm.files <- list.files(path=clim.dir,pattern=gcm)
+     ##seas.dir <- paste0(base.dir,gcm,'/rcp85/seasonal/climatologies/')
+     ##mon.dir <- paste0(base.dir,gcm,'/rcp85/monthly/climatologies/')
+     ##ann.dir <- paste0(base.dir,gcm,'/rcp85/annual/climatologies/')
 
      ##print(gcm)
      for (j in seq_along(intervals)) {
         print(intervals[j])
-        mon.files <- list.files(path=mon.dir,pattern='tas_monthly')
+        mon.files <- gcm.files[grep('tas_monthly',gcm.files)]
         mon.file <- mon.files[grep(intervals[j],mon.files)]
-        vals[g,j,1:12] <- retrieve_closest_cell(coords[1],coords[2],'tas',mon.dir,mon.file)
-        seas.files <- list.files(path=seas.dir,pattern='tas_seasonal')
+        vals[g,j,1:12] <- retrieve_closest_cell(coords[1],coords[2],'tas',clim.dir,mon.file)
+        seas.files <- gcm.files[grep('tas_seasonal',gcm.files)]
         seas.file <- seas.files[grep(intervals[j],seas.files)]
-        vals[g,j,13:16] <- retrieve_closest_cell(coords[1],coords[2],'tas',seas.dir,seas.file)
-        ann.files <- list.files(path=ann.dir,pattern='tas_average_annual')
+        vals[g,j,13:16] <- retrieve_closest_cell(coords[1],coords[2],'tas',clim.dir,seas.file)
+        ###ann.files <- list.files(path=ann.dir,pattern='tas_average_annual')
+        ann.files <- gcm.files[grep('tas_annual',gcm.files)]
         ann.file <- ann.files[grep(intervals[j],ann.files)]
-        vals[g,j,17] <- retrieve_closest_cell(coords[1],coords[2],'tas',ann.dir,ann.file)
+        vals[g,j,17] <- retrieve_closest_cell(coords[1],coords[2],'tas',clim.dir,ann.file)
      }
   }
   rv <- get.round.val('tas')
@@ -367,6 +371,7 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
   years <- c(sheets.tas$years,rep('NA',5))
   for (t in 1:sum(tas.flag)) {
      var.name <- tas.names[[t]]$name
+
      line <- sheets.tas$cwec[[var.name]]
      sheets.tas$cwec[[var.name]] <- append(line,values=c(years[t],sheets.tas$model[t,]),after=1)
   }
@@ -402,6 +407,6 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
   ##saveWorkbook(wb, paste0('/storage/data/projects/rci/weather_files/wx_summary_tables/',site,'_Summary_rcp85.xlsx'), overwrite = TRUE)
   saveWorkbook(wb, paste0(write.dir,site,'_Summary_rcp85.xlsx'), overwrite = TRUE)
   print(paste0(write.dir,site,'_Summary_rcp85.xlsx'))
-browser()
+
 }
 

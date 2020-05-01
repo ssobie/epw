@@ -93,7 +93,8 @@ get_stretch_function <- function(epw.name) {
 ##------------------------------------------------------------------------------
 ##Morph Dry Bulb Temperature using Belcher method
 
-generate_dry_bulb_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,gcm.dir,scenario,interval,
+generate_dry_bulb_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,gcm.dir,scenario,
+                                   past.int,proj.int,
                                    method,rlen=NULL,agg.fxn=mean) {
    
    tas.ix <- get_field_index('dry_bulb_temperature')
@@ -125,9 +126,9 @@ generate_dry_bulb_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,
    for (g in seq_along(gcm.list)) {
       gcm <- gcm.list[g]
       alpha.files <- list.files(path=gcm.dir,pattern=paste0('alpha_tasmax_tasmin_',gcm))
-      alpha.int.file <- alpha.files[grep(interval,alpha.files)]
-      
-      
+      alpha.int.files <- alpha.files[grep(past.int,alpha.files)]
+      alpha.int.file <- alpha.int.files[grep(proj.int,alpha.int.files)]
+            
       alpha.tx.tn <- read_cell(var.name='alpha_tas',lonc=lon,latc=lat,
                                input.file=alpha.int.file,read.dir=gcm.dir)
       alpha.tx.tn.agg <- make_average_series(alpha.tx.tn$data,alpha.tx.tn$time,
@@ -135,7 +136,8 @@ generate_dry_bulb_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,
       alphas[g,] <- alpha.tx.tn.agg                                     
 
       delta.ts.files <- list.files(path=gcm.dir,pattern=paste0('delta_tas_',gcm))
-      delta.ts.int.file <- delta.ts.files[grep(interval,delta.ts.files)]
+      delta.ts.int.files <- delta.ts.files[grep(past.int,delta.ts.files)]
+      delta.ts.int.file <- delta.ts.int.files[grep(proj.int,delta.ts.int.files)]
       delta.ts <- read_cell(var.name='tas',lonc=lon,latc=lat,
                             input.file=delta.ts.int.file,read.dir=gcm.dir)
       delta.ts.agg <- make_average_series(delta.ts$data,delta.ts$time,
@@ -181,7 +183,8 @@ generate_dew_point_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list
       gcm <- gcm.list[g]
 
       alpha.files <- list.files(path=gcm.dir,pattern=paste0('alpha_dewpoint_',gcm))
-      alpha.int.file <- alpha.files[grep(interval,alpha.files)]
+      alpha.int.files <- alpha.files[grep(past.int,alpha.files)]
+      alpha.int.file <- alpha.int.files[grep(proj.int,alpha.int.files)]
 
       alpha.dwpt <- read_cell(var.name='alpha_dewpoint',lonc=lon,latc=lat,
                               input.file=alpha.int.file,read.dir=gcm.dir)
@@ -189,7 +192,9 @@ generate_dew_point_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list
                                           method,rlen,agg.fxn)
 
       delta.dwpt.files <- list.files(path=gcm.dir,pattern=paste0('delta_dewpoint_',gcm))
-      delta.dwpt.int.file <- delta.dwpt.files[grep(interval,delta.dwpt.files)]
+      delta.dwpt.int.files <- delta.dwpt.files[grep(past.int,delta.dwpt.files)]
+      delta.dwpt.int.file <- delta.dwpt.int.files[grep(proj.int,delta.dewpoint.int.files)]
+
       delta.dwpt <- read_cell(var.name='dewpoint',lonc=lon,latc=lat,
                             input.file=delta.dwpt.int.file,read.dir=gcm.dir)
       delta.dwpt.agg <- make_average_series(delta.dwpt$data,delta.dwpt$time,
@@ -208,7 +213,8 @@ generate_dew_point_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list
 }
 
 ##------------------------------------------------------------------------------
-generate_horizontal_radiation <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,gcm.dir,scenario,interval,
+generate_horizontal_radiation <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,gcm.dir,scenario,
+                                          past.int,proj.int,
                                           method,rlen=NULL,agg.fxn=mean) {
 
    ghr.ix <- get_field_index('global_horizontal_radiation')
@@ -228,7 +234,9 @@ generate_horizontal_radiation <- function(epw.present,epw.var,gcm.var,lon,lat,gc
       gcm <- gcm.list[g]
       print(gcm)      
       alpha.files <- list.files(path=gcm.dir,pattern=paste0('alpha_rsds_',gcm))
-      alpha.int.file <- alpha.files[grep(interval,alpha.files)]
+      alpha.int.files <- alpha.files[grep(past.int,alpha.files)]
+      alpha.int.file <- alpha.int.files[grep(proj.int,alpha.int.files)]
+
       print(alpha.int.file)
 
       alpha.rsds <- read_cell(var.name='rsds',lonc=lon,latc=lat,
@@ -258,7 +266,8 @@ generate_horizontal_radiation <- function(epw.present,epw.var,gcm.var,lon,lat,gc
 ##------------------------------------------------------------------------------
 ##Morph by stretching using Belcher method
 
-generate_stretched_series <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,gcm.dir,scenario,interval,
+generate_stretched_series <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,gcm.dir,scenario,
+                                      past.int,proj.int,
                                       method,rlen=NULL,agg.fxn=mean) {
 
    epw.ix <- get_field_index(epw.var)
@@ -272,7 +281,8 @@ generate_stretched_series <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.li
       gcm <- gcm.list[g]
       print(gcm)
       alpha.files <- list.files(path=gcm.dir,pattern=paste0('alpha_',gcm.var,'_',gcm))
-      alpha.int.file <- alpha.files[grep(interval,alpha.files)]
+      alpha.int.files <- alpha.files[grep(past.int,alpha.files)]
+      alpha.int.file <- alpha.int.files[grep(proj.int,alpha.int.files)]
 
       alpha <- read_cell(var.name=gcm.var,lonc=lon,latc=lat,
                               input.file=alpha.int.file,read.dir=gcm.dir)
