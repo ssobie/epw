@@ -173,6 +173,7 @@ calculate_epw_file_statistics <- function(epw.file,interval,gcm.list,stats.names
   
   for (g in seq_along(gcm.list)) {
      gcm <- gcm.list[g]
+     print(paste0(gcm,'_',interval,'_',epw.file$file))
      proj.cwec[g,] <- calc_cwec_values(paste0(gcm,'_',interval,'_',epw.file$file),paste0(tmp.dir,'gcm_epws/'),stats.names)              
   }       
   rv <- list(past=past.cwec,proj=proj.cwec)
@@ -281,23 +282,22 @@ epw.dir <- '/storage/data/projects/rci/weather_files/canada_cwec_files/canada_ep
 wx.morph.dir <- '/storage/data/projects/rci/weather_files/canada_cwec_files/canada_morphed_epw_files/' 
 
 ##morph.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/bccaq2_tps/epw_factors/'
-tas.morph.dir <- '/storage/data/climate/downscale/BCCAQ2/epw_factors/'
-rhs.morph.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/bccaq2_tps/epw_factors/'
+tas.morph.dir <- '/storage/data/climate/downscale/BCCAQ2/epw_factors/rolled_bccaq2_1998-2014/'
+other.morph.dir <- '/storage/data/climate/downscale/CMIP5/epw_factors/rolled_gcm_1998-2014/'
 
 gcm.list <- c('ACCESS1-0','CanESM2','CNRM-CM5','CSIRO-Mk3-6-0','GFDL-ESM2G',
               'HadGEM2-CC','HadGEM2-ES','inmcm4','MIROC5','MRI-CGCM3')
 
 variable.list <- list(list(epw='dry_bulb_temperature',gcm='tas'),
-                       list(epw='relative_humidity',gcm='rhs'))
-
-##                       list(epw='dew_point_temperature',gcm='dewpoint'),
-##                       list(epw='diffuse_horizontal_radiation',gcm='rsds'),
-##                       list(epw='global_horizontal_radiation',gcm='rsds'),
-##                       list(epw='atmospheric_station_pressure',gcm='psl'),                       
-##                       list(epw='direct_normal_radiation',gcm='clt'),
-##                       list(epw='wind_speed',gcm='wspd'),
-##                       list(epw='total_sky_cover',gcm='clt'),
-##                       list(epw='opaque_sky_cover',gcm='clt'))
+                       list(epw='relative_humidity',gcm='rhs'),
+                       list(epw='dew_point_temperature',gcm='dewpoint'),
+                       list(epw='diffuse_horizontal_radiation',gcm='rsds'),
+                       list(epw='global_horizontal_radiation',gcm='rsds'),
+                       list(epw='atmospheric_station_pressure',gcm='psl'),                       
+                       list(epw='direct_normal_radiation',gcm='clt'),
+                       list(epw='wind_speed',gcm='wspd'),
+                       list(epw='total_sky_cover',gcm='clt'),
+                       list(epw='opaque_sky_cover',gcm='clt'))
 
 stats.list <- list(list(name='hdd',type='annual',title='HDD'),
                  list(name='tnnETCCDI',type='annual',title='TNN'),
@@ -326,7 +326,7 @@ stats.list <- list(list(name='hdd',type='annual',title='HDD'),
                  list(name='tas_ann',type='monthly',title='Annual TAS'))
 
 
-tmp.dir <- '/local_temp/ssobie/epw/'
+tmp.dir <- '/local_temp/ssobie/morph/'
 if (!file.exists(tmp.dir)) {
    dir.create(tmp.dir,recursive=TRUE)
    dir.create(paste0(tmp.dir,'gcm_epws/'),recursive=TRUE)
@@ -342,11 +342,11 @@ print('Copying EPW factors to tmp (31Gb)')
 ##if (!file.exists(tmp.dir)) {
   tas.files <- list.files(path=tas.morph.dir,pattern='tas',full.name=TRUE)
   tas.interval.files <- tas.files[grep(past.int,tas.files)]
-  file.copy(from=tas.interval.files,to=paste0(tmp.dir,'epw_factors/'))
+  file.copy(from=tas.interval.files,to=paste0(tmp.dir,'epw_factors/'),overwrite=T)
 
-  rhs.files <- list.files(path=rhs.morph.dir,pattern='rhs',full.name=TRUE)
-  rhs.interval.files <- rhs.files[grep(past.int,rhs.files)]
-  file.copy(from=rhs.interval.files,to=paste0(tmp.dir,'epw_factors/'))
+  other.files <- list.files(path=other.morph.dir,pattern='roll21',full.name=TRUE)
+  other.interval.files <- other.files[grep(past.int,other.files)]
+  file.copy(from=other.interval.files,to=paste0(tmp.dir,'epw_factors/'),overwrite=T)
 ##}
 
 
@@ -363,7 +363,7 @@ for(province in provinces) {
 
       ##Check for presence of temperature data (coastal sites may coincide with ocean cells)
       tas.check <- read_cell(var.name='tas',lonc=epw.coords[1],latc=epw.coords[2],
-                             input.file='delta_tas_CanESM2_1998-2014_2011-2040.nc',
+                             input.file='roll21_delta_tas_CanESM2_1998-2014_2041-2070.nc',
                              read.dir=paste0(tmp.dir,'epw_factors/'))
 
       if (all(is.na(tas.check$data))) {
@@ -394,8 +394,8 @@ for(province in provinces) {
                                 sheets.closest=sheets.closest,
                                 sheets.offset=NULL,
                                 method=method,rlen=rlen,write.dir)
-
       }
+
    }
 }
 clean.files <- list.files(path=tmp.dir,recursive=TRUE,full.name=T)

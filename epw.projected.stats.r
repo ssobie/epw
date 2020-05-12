@@ -204,7 +204,7 @@ calc_gcm_stats <- function(var.info,coords,scenario,model.list,
 calc_gcm_tas_stats <- function(coords,scenario,model.list,
                                base.dir) {
 
-  intervals <- c('1971-2000','1998-2014')
+  intervals <- '1998-2014' ##c('1971-2000','1998-2014')
 
   ##GCM Component
   vals <- array(NA,c(length(model.list),length(intervals),17))
@@ -377,11 +377,11 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
   }
 
   addWorksheet(wb, "Mean Temperature Climatologies") ##"Requested Site (CWEC)")
-  setColWidths(wb, sheet = sheet, cols = 1:17, widths = c(30,rep(14,16))) ##Set fixed width
+  setColWidths(wb, sheet = sheet, cols = 1:16, widths = c(30,rep(14,15))) ##Set fixed width
   create_temp_climatologies_top_pane(wb,sheet=sheet,site=site)
   ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
   write_variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.tas$cwec,
-                              data.cols=2:17,highlights=c(8,9,12,13,16,17))
+                              data.cols=2:16,highlights=c(7,8,11,12,15,16))
   freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
 
 

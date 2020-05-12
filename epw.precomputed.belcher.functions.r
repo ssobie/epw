@@ -131,8 +131,9 @@ generate_dry_bulb_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,
             
       alpha.tx.tn <- read_cell(var.name='alpha_tas',lonc=lon,latc=lat,
                                input.file=alpha.int.file,read.dir=gcm.dir)
-      alpha.tx.tn.agg <- make_average_series(alpha.tx.tn$data,alpha.tx.tn$time,
-                                          method,rlen,agg.fxn)
+      alpha.tx.tn.agg <- alpha.tx.tn$data  ##make_average_series(alpha.tx.tn$data,alpha.tx.tn$time,
+                           ##               method,rlen,agg.fxn)
+
       alphas[g,] <- alpha.tx.tn.agg                                     
 
       delta.ts.files <- list.files(path=gcm.dir,pattern=paste0('delta_tas_',gcm))
@@ -140,8 +141,8 @@ generate_dry_bulb_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,
       delta.ts.int.file <- delta.ts.int.files[grep(proj.int,delta.ts.int.files)]
       delta.ts <- read_cell(var.name='tas',lonc=lon,latc=lat,
                             input.file=delta.ts.int.file,read.dir=gcm.dir)
-      delta.ts.agg <- make_average_series(delta.ts$data,delta.ts$time,
-                                          method,rlen,agg.fxn)
+      delta.ts.agg <- delta.ts$data ##make_average_series(delta.ts$data,delta.ts$time,
+                                    ##      method,rlen,agg.fxn)
       deltas[g,] <- delta.ts.agg
 
       ##
@@ -161,7 +162,8 @@ generate_dry_bulb_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,
 ##------------------------------------------------------------------------------
 ##Morph Dewpoint Temperature using Belcher method
 
-generate_dew_point_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,gcm.dir,scenario,interval,
+generate_dew_point_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list,gcm.dir,scenario,
+                                   past.int,proj.int,
                                    method,rlen=NULL,agg.fxn=mean) {
 
    dwpt.ix <- get_field_index('dew_point_temperature')
@@ -188,17 +190,17 @@ generate_dew_point_temp <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.list
 
       alpha.dwpt <- read_cell(var.name='alpha_dewpoint',lonc=lon,latc=lat,
                               input.file=alpha.int.file,read.dir=gcm.dir)
-      alpha.dwpt.agg <- make_average_series(alpha.dwpt$data,alpha.dwpt$time,
-                                          method,rlen,agg.fxn)
+      alpha.dwpt.agg <- alpha.dwpt$data ##make_average_series(alpha.dwpt$data,alpha.dwpt$time,
+                                        ##  method,rlen,agg.fxn)
 
       delta.dwpt.files <- list.files(path=gcm.dir,pattern=paste0('delta_dewpoint_',gcm))
       delta.dwpt.int.files <- delta.dwpt.files[grep(past.int,delta.dwpt.files)]
-      delta.dwpt.int.file <- delta.dwpt.int.files[grep(proj.int,delta.dewpoint.int.files)]
+      delta.dwpt.int.file <- delta.dwpt.int.files[grep(proj.int,delta.dwpt.int.files)]
 
       delta.dwpt <- read_cell(var.name='dewpoint',lonc=lon,latc=lat,
                             input.file=delta.dwpt.int.file,read.dir=gcm.dir)
-      delta.dwpt.agg <- make_average_series(delta.dwpt$data,delta.dwpt$time,
-                                          method,rlen,agg.fxn)
+      delta.dwpt.agg <- delta.dwpt$data ##make_average_series(delta.dwpt$data,delta.dwpt$time,
+                                        ##  method,rlen,agg.fxn)
 
       ##
       for (d in 1:tlen) {
@@ -241,8 +243,8 @@ generate_horizontal_radiation <- function(epw.present,epw.var,gcm.var,lon,lat,gc
 
       alpha.rsds <- read_cell(var.name='rsds',lonc=lon,latc=lat,
                               input.file=alpha.int.file,read.dir=gcm.dir)
-      alpha.rsds.agg <- make_average_series(alpha.rsds$data,alpha.rsds$time,
-                                          method,rlen,agg.fxn)  
+      alpha.rsds.agg <-alpha.rsds$data ## make_average_series(alpha.rsds$data,alpha.rsds$time,
+                                       ##   method,rlen,agg.fxn)  
       for (d in 1:365) {
          ix <- format(dates,'%j') == sprintf('%03d',d)  
          morphed.global[g,ix] <- epw.global[ix] * alpha.rsds.agg[d]
@@ -286,8 +288,8 @@ generate_stretched_series <- function(epw.present,epw.var,gcm.var,lon,lat,gcm.li
 
       alpha <- read_cell(var.name=gcm.var,lonc=lon,latc=lat,
                               input.file=alpha.int.file,read.dir=gcm.dir)
-      alpha.agg <- make_average_series(alpha$data,alpha$time,
-                                          method,rlen,agg.fxn)  
+      alpha.agg <- alpha$data ##make_average_series(alpha$data,alpha$time,
+                              ##            method,rlen,agg.fxn)  
 
       for (d in 1:365) {
          ix <- format(dates,'%j') == sprintf('%03d',d)  

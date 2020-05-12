@@ -184,9 +184,9 @@ create.frozen.top.pane <- function(wb,sheet,site) {
 ##-----------------------------------------------------------------------------------------
 create_temp_climatologies_top_pane <- function(wb,sheet,site) {
 
+##                              'Model Past',
       pane.titles <- list(site,'Past (TMY)',
                               'TMY Year',
-                              'Model Past',
                               'Model Past',
                               '2020s Future',' ',
                               '2020s Change',' ',
@@ -199,21 +199,22 @@ create_temp_climatologies_top_pane <- function(wb,sheet,site) {
                          border = "TopBottomLeftRight", fontColour = "black")
       writeData(wb, sheet=sheet, pane.titles, startRow = 1, startCol = 1, headerStyle = fz1,
                 borders = "rows", borderStyle = "medium")
-      addStyle(wb,sheet=sheet,fz1,rows=1,cols=1:17,gridExpand=FALSE,stack=FALSE)
-      mergeCells(wb,sheet=sheet,cols=c(6,7),rows=1)
-      mergeCells(wb,sheet=sheet,cols=c(8,9),rows=1)
-      mergeCells(wb,sheet=sheet,cols=c(10,11),rows=1)
-      mergeCells(wb,sheet=sheet,cols=c(12,13),rows=1)
-      mergeCells(wb,sheet=sheet,cols=c(14,15),rows=1)
-      mergeCells(wb,sheet=sheet,cols=c(16,17),rows=1)
+      addStyle(wb,sheet=sheet,fz1,rows=1,cols=1:16,gridExpand=FALSE,stack=FALSE)
+      mergeCells(wb,sheet=sheet,cols=c(5,6),rows=1)
+      mergeCells(wb,sheet=sheet,cols=c(7,8),rows=1)
+      mergeCells(wb,sheet=sheet,cols=c(9,10),rows=1)
+      mergeCells(wb,sheet=sheet,cols=c(11,12),rows=1)
+      mergeCells(wb,sheet=sheet,cols=c(13,14),rows=1)
+      mergeCells(wb,sheet=sheet,cols=c(15,16),rows=1)
       ##freezePane(wb,sheet=sheet,firstRow=TRUE)
 
-      prct.header <- list(' ',' ',' ','(1971-2000)','(1998-2014) ',
+      ##'(1971-2000)',
+      prct.header <- list(' ',' ',' ','(1998-2014) ',
                           'Average','10th%-90th%','Average','10th%-90th%','Average','10th%-90th%',
                           'Average','10th%-90th%','Average','10th%-90th%','Average','10th%-90th%')          
       writeData(wb, sheet=sheet, prct.header, startRow = 2, startCol = 1, headerStyle = fz1,
                 borders = "rows", borderStyle = "medium")
-      addStyle(wb,sheet=sheet,fz1,rows=2,cols=1:17,gridExpand=FALSE,stack=FALSE)
+      addStyle(wb,sheet=sheet,fz1,rows=2,cols=1:16,gridExpand=FALSE,stack=FALSE)
       ##freezePane(wb,sheet=sheet,firstActiveRow=3)
 }
 
