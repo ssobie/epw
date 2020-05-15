@@ -31,6 +31,18 @@ dd <- function(tmean,tbase) {
 
 ##----------------------------------------------------------------------- 
 
+##Midday Hours: Number of hours between 8am and 4pm where dry bulb
+##is between 13C and 21C
+
+midday <- function(t) {
+  g <- tmean - tbase
+  days <- sum(g[g>0], na.rm=T)
+  return(round(days))
+}
+
+
+##----------------------------------------------------------------------- 
+
 specific_humidity <- function(dwpt,pas) {
   dwpt <- dwpt + 273
   vape.press <- sat.vape * exp( (lh.vape/R.vapor) * (1/T.zero - 1/dwpt))
@@ -87,17 +99,24 @@ calc_cwec_values <- function(present.epw.file,epw.dir,var.names) {
   tas.ix <- get_field_index('dry_bulb_temperature')
   epw.tas <- epw.present$data[,tas.ix]
   dates <- as.Date(paste('1999',sprintf('%02d',epw.present$data[,2]),sprintf('%02d',epw.present$data[,3]),sep='-'))
-
+  hours <- sprintf('%02d',epw.present$data[,4])
   fac <- as.factor(format(dates,'%Y-%m-%d'))
   day.dates <- as.Date(levels(fac))
   mon.fac <- as.factor(format(day.dates,'%m'))
   seasons <-  c("DJF", "DJF", "MAM", "MAM", "MAM", "JJA", "JJA", "JJA", "SON", "SON", "SON", "DJF")
   seas.fac <- factor(seasons[mon.fac], levels=c('DJF', 'MAM', 'JJA', 'SON'))
 
+  ##Mid-day temperature index
+  epw.tas.thresh <- epw.tas >= 13 & epw.tas <= 21
+  mid.day.hours <- hours %in% 8:16 ##Hours between 8:00am and 4:00pm
+  epw.tas.thresh[!mid.day.hours] <- FALSE
+  epw.tas.midday <- tapply(epw.tas.thresh,fac,sum)
+
   epw.tas.daily <- tapply(epw.tas,fac,mean)
 
   epw.hdd <- dd(-1*epw.tas.daily,-18)
   epw.cdd <- dd(epw.tas.daily,18)
+  epw.cdd.10 <- dd(epw.tas.daily,10)
 
   epw.txx <- max(epw.tas)
   epw.tnn <- min(epw.tas)
@@ -124,6 +143,7 @@ calc_cwec_values <- function(present.epw.file,epw.dir,var.names) {
 
   cwec.col <- c(epw.hdd,
                    epw.cdd,
+                   epw.cdd.10,
                    epw.txx,
                    epw.tnn,
                    epw.975,
@@ -135,7 +155,8 @@ calc_cwec_values <- function(present.epw.file,epw.dir,var.names) {
                    tas.annual)
 
   names(cwec.col) <- c("hdd",
-                       "cdd", 
+                       "cdd",
+                       "cdd_10", 
                        "txxETCCDI",
                        "tnnETCCDI",
                        "tasmax.annual_quantile_975",
@@ -285,7 +306,9 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
                    "while the remaining columns summarize future shifted values (i.e. data from files:",
                    paste0("2020s_CAN_BC_",nearest,"_CWEC2016.epw"),
                    paste0("2050s_CAN_BC_",nearest,"_CWEC2016.epw"),
-                   paste0("2080s_CAN_BC_",nearest,"_CWEC2016.epw)."))
+                   paste0("2080s_CAN_BC_",nearest,"_CWEC2016.epw)."),
+                   "Future files are created by applying daily morphing factors (smoothed with a",
+                   "21-day rolling mean) from an ensemble of 10 global climate models.")
   if (!is.null(sheets.offset)) {
      description <- c(description," ",
                       "The 'Adjusted Weather File Station' tab of this file contains past and future-shifted",
@@ -338,6 +361,8 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
                              paste0("2020s_CAN_BC_",site,"-offset-from-",nearest,"_CWEC2016.epw"),
                              paste0("2050s_CAN_BC_",site,"-offset-from-",nearest,"_CWEC2016.epw"),
                              paste0("2080s_CAN_BC_",site,"-offset-from-",nearest,"_CWEC2016.epw)."),
+                            "Future files are created by applying daily morphing factors (smoothed with a",
+                            "21-day rolling mean) from an ensemble of 10 global climate models.",
                              "The first tab of this file contains past and future-shifted versions at ",
                              paste0(nearest," that have NOT been corrected for the difference in climatology between"),
                              paste0("it and ",site,"."))

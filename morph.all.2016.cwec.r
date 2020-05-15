@@ -137,7 +137,7 @@ create_gcm_morphed_epw_files <- function(morphed.gcm.list,variable.list,
 ##Create an ensemble average EPW file that will be written
 ##to file and be made available 
 
-create_ensemble_average_morphed_epw <- function(epw.file,variable.list,morphed.gcm.list,
+create_ensemble_average_morphed_epw <- function(epw.file,variable.list,morphed.gcm.list,file.version,
                                                 write.dir,future.epw.file) {
     epw.present <- read.epw.file(epw.file$dir,epw.file$file) 
     epw.ens.present <- epw.present 
@@ -150,10 +150,15 @@ create_ensemble_average_morphed_epw <- function(epw.file,variable.list,morphed.g
        morphed.gcm <- morphed.gcm.list[[var.names$epw]]
        epw.ens.present$data[,get_field_index(var.names$epw)] <- round(apply(morphed.gcm,2,mean),rd)
     }
-    short.names <- paste(unlist(lapply(variable.list,function(x){get_short_name(x$epw)})),collapse='|')
+    short.names <- paste(unlist(lapply(variable.list,function(x){get_short_name(x$epw)})),collapse=',')
     epw.ens.present$header[1] <- paste0(epw.present$header[1],
-                                        ' Morphed:',short.names,
-                                        ' with an ENSEMBLE of 10 GCMs, Daily Morphing Factors with 21-Day Rolling Mean')
+                                        ' | Morphed:',short.names,
+                                        ' | File Version: ',file.version,
+                                        ' | Creation Date: ',format(Sys.time(),'%Y-%m-%d'))
+ 
+##    epw.ens.present$header[1] <- paste0(epw.present$header[1],
+##                                        ' Morphed:',short.names,
+##                                        ' with an ENSEMBLE of 10 GCMs, Daily Morphing Factors with 21-Day Rolling Mean')
     
     write.epw.file(epw.ens.present$data,epw.ens.present$header,paste0(tmp.dir,'gcm_epws/'),future.epw.file)
     ##This copy below is passed to be used externally
@@ -185,7 +190,7 @@ calculate_epw_file_statistics <- function(epw.file,interval,gcm.list,stats.names
 
 create_cwec_table_sheets <- function(epw.file,past.int,intervals,lon,lat,
                                      gcm.list,variable.list,stats.list,
-                                     tmp.dir,scenario,
+                                     tmp.dir,scenario,file.version,
                                      method,rlen,write.dir) {
    coords <- c(lon,lat)
    ###base.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/high_res_downscaling/bccaq_gcm_bc_subset/'
@@ -218,6 +223,7 @@ create_cwec_table_sheets <- function(epw.file,past.int,intervals,lon,lat,
       create_ensemble_average_morphed_epw(epw.file=epw.file,
                                        variable.list=variable.list,
                                        morphed.gcm.list=morphed.gcm.list,
+                                       file.version=file.version,
                                        write.dir=write.dir,future.epw.file=future.epw.file)
    }  
 
@@ -288,22 +294,28 @@ other.morph.dir <- '/storage/data/climate/downscale/CMIP5/epw_factors/rolled_gcm
 gcm.list <- c('ACCESS1-0','CanESM2','CNRM-CM5','CSIRO-Mk3-6-0','GFDL-ESM2G',
               'HadGEM2-CC','HadGEM2-ES','inmcm4','MIROC5','MRI-CGCM3')
 
+##Primary variable list
 variable.list <- list(list(epw='dry_bulb_temperature',gcm='tas'),
                        list(epw='relative_humidity',gcm='rhs'),
                        list(epw='dew_point_temperature',gcm='dewpoint'),
-                       list(epw='diffuse_horizontal_radiation',gcm='rsds'),
-                       list(epw='global_horizontal_radiation',gcm='rsds'),
-                       list(epw='atmospheric_station_pressure',gcm='psl'),                       
-                       list(epw='direct_normal_radiation',gcm='clt'),
-                       list(epw='wind_speed',gcm='wspd'),
-                       list(epw='total_sky_cover',gcm='clt'),
-                       list(epw='opaque_sky_cover',gcm='clt'))
+                       list(epw='atmospheric_station_pressure',gcm='psl'))                       
+
+##Secondary variable list
+##                       list(epw='diffuse_horizontal_radiation',gcm='rsds'),
+##                       list(epw='global_horizontal_radiation',gcm='rsds'),
+##                       list(epw='direct_normal_radiation',gcm='clt'),
+##                       list(epw='wind_speed',gcm='wspd'),
+##                       list(epw='total_sky_cover',gcm='clt'),
+##                       list(epw='opaque_sky_cover',gcm='clt'))
 
 stats.list <- list(list(name='hdd',type='annual',title='HDD'),
                  list(name='tnnETCCDI',type='annual',title='TNN'),
                  list(name='tasmin.annual_quantile_010',type='annual',title='Heating 99.0%'),
+                 list(name='tasmin.annual_quantile_025',type='annual',title='Heating 97.5%'),
                  list(name='wetbulb.annual_quantile_010',type='annual',title='Heating (Wetbulb) 99.0%'),
+                 list(name='wetbulb.annual_quantile_025',type='annual',title='Heating (Wetbulb) 97.5%'),
                  list(name='cdd',type='annual',title='CDD'),
+                 list(name='cdd10',type='annual',title='CDD10'),
                  list(name='txxETCCDI',type='annual',title='TXX'),
                  list(name='tasmax.annual_quantile_975',type='annual',title='Cooling 2.5%'),
                  list(name='wetbulb.annual_quantile_975',type='annual',title='Cooling (Wetbulb) 2.5%'),
@@ -332,6 +344,8 @@ if (!file.exists(tmp.dir)) {
    dir.create(paste0(tmp.dir,'gcm_epws/'),recursive=TRUE)
    dir.create(paste0(tmp.dir,'epw_factors/'),recursive=TRUE)
 }
+
+file.version <- 'TESTING'
 past.int <- '1998-2014'
 intervals <- c('2011-2040','2041-2070','2071-2100')
 
@@ -387,13 +401,14 @@ for(province in provinces) {
          sheets.closest <- create_cwec_table_sheets(list(file=file,dir=paste0(epw.dir,province,'/')),
                                               past.int,intervals,n.lon,n.lat,
                                               gcm.list,variable.list,stats.list,
-                                              tmp.dir,scenario,
+                                              tmp.dir,scenario,file.version,
                                               method,rlen,write.dir)
          make_formated_stats_table(nearest=epw.name,site=new.location,
                                 var.list=stats.list,
                                 sheets.closest=sheets.closest,
                                 sheets.offset=NULL,
                                 method=method,rlen=rlen,write.dir)
+         browser()
       }
 
    }

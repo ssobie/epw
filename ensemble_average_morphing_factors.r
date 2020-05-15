@@ -93,11 +93,10 @@ gcm.list <- c('ACCESS1-0','CanESM2','CNRM-CM5','CSIRO-Mk3-6-0','GFDL-ESM2G',
 ##morph.name <- 'delta_tas' ##To match the file name morphing factor
 ##var.name <- 'tas'
 
-morph.name <- 'alpha_dewpoint'
-var.name <- 'alpha_dewpoint'
+##morph.name <- 'alpha_dewpoint'
+##var.name <- 'alpha_dewpoint'
 
-past.int <- '1998-2014'
-proj.int <- '2011-2040'
+past.int <- '2004-2018'
 
 testing <- FALSE
 if (testing) {
@@ -109,6 +108,10 @@ if (testing) {
       eval(parse(text=args[[i]]))
    }
 }
+
+morph.name <- morph
+proj.int <- proj ##'2071-2100'
+var.name <- varname
 
 ##-------------------------------------------------------------------------
 

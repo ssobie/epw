@@ -151,16 +151,11 @@ create_rolling_means <- function(file.name,roll.name,var.name,tmp.dir) {
 ##morph.name <- 'alpha_tasmax_tasmin' ##To match the file name morphing factor
 ##var.name <- 'alpha_tas'
 
-morph.name <- 'delta_tas' ##To match the file name morphing factor
-var.name <- 'tas'
+##morph.name <- 'delta_tas' ##To match the file name morphing factor
+##var.name <- 'tas'
 
-##morph.name <- 'alpha_rsds'
-##var.name <- 'rsds'
 
-type <- 'BCCAQ2'
-
-past.int <- '1998-2014'
-proj.int <- '2011-2040'
+past.int <- '2004-2018'
 
 testing <- FALSE
 if (testing) {
@@ -172,6 +167,19 @@ if (testing) {
       eval(parse(text=args[[i]]))
    }
 }
+
+var.name <- varname ##'rhs'
+
+morph.name <- switch(var.name,
+                     rsds='alpha_rsds',
+                     rhs='alpha_rhs',
+                     clt='alpha_clt',
+                     psl='alpha_psl',
+                     wspd='alpha_wspd',
+                     dewpoint='delta_dewpoint',
+                     alpha_dewpoint='alpha_dewpoint')
+##type <- 'GCM'
+proj.int <- proj ##'2041-2070'
 
 ##-------------------------------------------------------------------------
 
