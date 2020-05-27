@@ -8,6 +8,7 @@ source('/storage/home/ssobie/code/repos/epw/epw.precomputed.belcher.functions.r'
 source('/storage/home/ssobie/code/repos/epw/epw.prism.offset.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/epw.support.functions.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/epw.projected.stats.r',chdir=T)
+source('/storage/home/ssobie/code/repos/epw/figures.for.summary.tables.r',chdir=T)
 
 ##------------------------------------------------------------------------------
 ##Read specified cell from the precomputed morphing values
@@ -191,11 +192,11 @@ calculate_epw_file_statistics <- function(epw.file,interval,gcm.list,stats.names
 create_cwec_table_sheets <- function(epw.file,past.int,intervals,lon,lat,
                                      gcm.list,variable.list,stats.list,
                                      tmp.dir,scenario,file.version,
-                                     method,rlen,write.dir) {
+                                     method,rlen,write.dir,fig.dir) {
    coords <- c(lon,lat)
    ###base.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/high_res_downscaling/bccaq_gcm_bc_subset/'
    base.dir <- '/storage/data/climate/downscale/BCCAQ2/bccaqv2_climatologies/'
-   gcm.site.tas  <- calc_gcm_tas_stats(coords,scenario,gcm.list,base.dir)
+   gcm.site.tas  <- calc_gcm_tas_stats(coords,scenario,gcm.list,past.int,base.dir)
 
    pef.split <- strsplit(epw.file$file,'_')[[1]]
    epw.present <- read.epw.file(epw.file$dir,epw.file$file) 
@@ -249,12 +250,17 @@ create_cwec_table_sheets <- function(epw.file,past.int,intervals,lon,lat,
    } 
    names(cwec.entries) <- stats.names
 
+   ##Create plots here using the ensemble values
+
+   ##figs <- make_summary_figures(cwec.2020s,cwec.2050s,cwec.2080s,pef.split[3],fig.dir)
+##browser()
 
    check.dir <- paste0(base.dir,'ACCESS1-0/rcp85/annual/climatologies/')
    rv <- cwec.entries
    rv <- list(cwec=cwec.entries,
               model=gcm.site.tas,
               years=tmy.years)
+
    return(rv)
 }
 
@@ -291,6 +297,8 @@ wx.morph.dir <- '/storage/data/projects/rci/weather_files/canada_cwec_files/cana
 tas.morph.dir <- '/storage/data/climate/downscale/BCCAQ2/epw_factors/rolled_bccaq2_1998-2014/'
 other.morph.dir <- '/storage/data/climate/downscale/CMIP5/epw_factors/rolled_gcm_1998-2014/'
 
+fig.dir <- '/storage/data/projects/rci/weather_files/canada_cwec_files/summary_cwec_figures/'
+
 gcm.list <- c('ACCESS1-0','CanESM2','CNRM-CM5','CSIRO-Mk3-6-0','GFDL-ESM2G',
               'HadGEM2-CC','HadGEM2-ES','inmcm4','MIROC5','MRI-CGCM3')
 
@@ -315,7 +323,7 @@ stats.list <- list(list(name='hdd',type='annual',title='HDD'),
                  list(name='wetbulb.annual_quantile_010',type='annual',title='Heating (Wetbulb) 99.0%'),
                  list(name='wetbulb.annual_quantile_025',type='annual',title='Heating (Wetbulb) 97.5%'),
                  list(name='cdd',type='annual',title='CDD'),
-                 list(name='cdd10',type='annual',title='CDD10'),
+                 list(name='cdd_10',type='annual',title='CDD10'),
                  list(name='txxETCCDI',type='annual',title='TXX'),
                  list(name='tasmax.annual_quantile_975',type='annual',title='Cooling 2.5%'),
                  list(name='wetbulb.annual_quantile_975',type='annual',title='Cooling (Wetbulb) 2.5%'),
@@ -356,11 +364,11 @@ print('Copying EPW factors to tmp (31Gb)')
 ##if (!file.exists(tmp.dir)) {
   tas.files <- list.files(path=tas.morph.dir,pattern='tas',full.name=TRUE)
   tas.interval.files <- tas.files[grep(past.int,tas.files)]
-  file.copy(from=tas.interval.files,to=paste0(tmp.dir,'epw_factors/'),overwrite=T)
+##  file.copy(from=tas.interval.files,to=paste0(tmp.dir,'epw_factors/'),overwrite=T)
 
   other.files <- list.files(path=other.morph.dir,pattern='roll21',full.name=TRUE)
   other.interval.files <- other.files[grep(past.int,other.files)]
-  file.copy(from=other.interval.files,to=paste0(tmp.dir,'epw_factors/'),overwrite=T)
+##  file.copy(from=other.interval.files,to=paste0(tmp.dir,'epw_factors/'),overwrite=T)
 ##}
 
 
@@ -375,17 +383,24 @@ for(province in provinces) {
       epw.stn.names <- strsplit(epw.name,'\\.')[[1]]
       new.location <- paste(epw.stn.names[-length(epw.stn.names)],collapse='_')  ##remove the stn id
 
+      tas.fig <- paste0(fig.dir,province,'/',new.location,'/',epw.name,'_mean_temperature_boxplots.png')
+      wx.figures <- list(tas=tas.fig)
+
       ##Check for presence of temperature data (coastal sites may coincide with ocean cells)
       tas.check <- read_cell(var.name='tas',lonc=epw.coords[1],latc=epw.coords[2],
-                             input.file='roll21_delta_tas_CanESM2_1998-2014_2041-2070.nc',
+                             input.file=paste0('roll21_delta_tas_CanESM2_',past.int,'_2041-2070.nc'),
                              read.dir=paste0(tmp.dir,'epw_factors/'))
 
       if (all(is.na(tas.check$data))) {
          print(paste0('EPW location is an ocean cell in ANUSPLIN. Unable to morph',new.location,'.'))        
       } else {
          write.dir <- paste0(wx.morph.dir,province,'/',new.location,'/')
+         wx.fig.dir <- paste0(fig.dir,province,'/',new.location,'/')
          if (!file.exists(write.dir)) {
            dir.create(write.dir,recursive=TRUE)
+         }
+         if (!file.exists(wx.fig.dir)) {
+           dir.create(wx.fig.dir,recursive=TRUE)
          }
 
          n.lon <- epw.coords[1]
@@ -402,12 +417,12 @@ for(province in provinces) {
                                               past.int,intervals,n.lon,n.lat,
                                               gcm.list,variable.list,stats.list,
                                               tmp.dir,scenario,file.version,
-                                              method,rlen,write.dir)
+                                              method,rlen,write.dir,wx.fig.dir)
          make_formated_stats_table(nearest=epw.name,site=new.location,
                                 var.list=stats.list,
                                 sheets.closest=sheets.closest,
                                 sheets.offset=NULL,
-                                method=method,rlen=rlen,write.dir)
+                                method=method,rlen=rlen,write.dir,wx.figures)
          browser()
       }
 

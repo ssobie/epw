@@ -45,7 +45,8 @@ get.round.val <- function(var.name) {
 
 filter.input.variables <- function(table.vars) {
   all.vars <- unlist(lapply(table.vars,function(x){return(x[1])}))
-  derived.vars <- c('hdd','tnnETCCDI','tasmin.annual_quantile_010','wetbulb.annual_quantile_010','cdd',
+  derived.vars <- c('hdd','tnnETCCDI','tasmin.annual_quantile_010','tasmin.annual_quantile_025',
+                    'wetbulb.annual_quantile_010','wetbulb.annual_quantile_025','cdd','cdd_10',
                     'txxETCCDI','tasmax.annual_quantile_975','wetbulb.annual_quantile_975')
   derived.ix <- match(derived.vars,all.vars)
   derived.selected <- table.vars[derived.ix[!is.na(derived.ix)]]

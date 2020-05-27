@@ -5,10 +5,10 @@ source('/storage/home/ssobie/code/repos/epw/epw.stats.formatted.table.functions.
 
 ##------------------------------------------------------------------------------
 ##Make sure GCM values are available for this location
-check_for_gcm_data <- function(lonc,latc,gcm.dir,gcm,scenario) {
+check_for_gcm_data <- function(lonc,latc,gcm.dir,gcm,scenario,past.int) {
 
   tasmax.files <- list.files(path=gcm.dir,pattern="tasmax_average_annual_climatology")
-  tasmax.file <- tasmax.files[grep('1998-2014',tasmax.files)]
+  tasmax.file <- tasmax.files[grep(past.int,tasmax.files)]
   nc <- nc_open(paste0(gcm.dir,tasmax.file))
   lon <- ncvar_get(nc,'lon')
   lat <- ncvar_get(nc,'lat')
@@ -67,9 +67,9 @@ retrieve_closest_cell <- function(lonc,latc,var.name,file.dir,file.name) {
 
 ##------------------------------------------------------------------------------ 
 
-get_var_clims <- function(var.info,var.dir,coords) {
+get_var_clims <- function(var.info,var.dir,coords,past.int) {
   
-  intervals <- c('1998-2014','2011-2040','2041-2070','2071-2100')
+  intervals <- c(past.int,'2011-2040','2041-2070','2071-2100')
   var.cell <- rep(NA,length(intervals))
   var.ref <- var.info$name
   if (grepl('\\.',var.info$name)) {
@@ -122,7 +122,8 @@ calc_cwec_values <- function(present.epw.file,epw.dir,var.names) {
   epw.tnn <- min(epw.tas)
 
   epw.975 <- quantile(epw.tas,0.975,names=F)
-  epw.001 <- quantile(epw.tas,0.01,names=F)
+  epw.010 <- quantile(epw.tas,0.01,names=F)
+  epw.025 <- quantile(epw.tas,0.025,names=F)
 
   dwpt.ix <- get_field_index('dew_point_temperature')
   epw.dwpt <- epw.present$data[,dwpt.ix]
@@ -133,7 +134,8 @@ calc_cwec_values <- function(present.epw.file,epw.dir,var.names) {
   epw.twb <- temp.wet.bulb(epw.tas+273,epw.dwpt,epw.pas,epw.sph) - 273
 
   twb.975 <- round(quantile(epw.twb,0.975,names=F),1)
-  twb.001 <- round(quantile(epw.twb,0.01,names=F),1)
+  twb.010 <- round(quantile(epw.twb,0.01,names=F),1)
+  twb.025 <- round(quantile(epw.twb,0.025,names=F),1)
 
   epw.tas.daily <- tapply(epw.tas,fac,mean)
   
@@ -142,17 +144,19 @@ calc_cwec_values <- function(present.epw.file,epw.dir,var.names) {
   tas.annual <- mean(epw.tas.daily)
 
   cwec.col <- c(epw.hdd,
-                   epw.cdd,
-                   epw.cdd.10,
-                   epw.txx,
-                   epw.tnn,
-                   epw.975,
-                   epw.001,
-                   twb.975,
-                   twb.001,
-                   tas.monthly,
-                   tas.seasonal,
-                   tas.annual)
+                epw.cdd,
+                epw.cdd.10,
+                epw.txx,
+                epw.tnn,
+                epw.975,
+                epw.010,
+                epw.025,
+                twb.975,
+                twb.010,
+                twb.025,
+                tas.monthly,
+                tas.seasonal,
+                tas.annual)
 
   names(cwec.col) <- c("hdd",
                        "cdd",
@@ -161,8 +165,10 @@ calc_cwec_values <- function(present.epw.file,epw.dir,var.names) {
                        "tnnETCCDI",
                        "tasmax.annual_quantile_975",
                        "tasmin.annual_quantile_010",
+                       "tasmin.annual_quantile_025",
                        "wetbulb.annual_quantile_975",
                        "wetbulb.annual_quantile_010",
+                       "wetbulb.annual_quantile_025",
                        'tas_jan','tas_feb','tas_mar',
                        'tas_apr','tas_may','tas_jun',
                        'tas_jul','tas_aug','tas_sep',
@@ -195,11 +201,11 @@ get_gcm_directory <- function(var.info,gcm,base.dir) {
 
 ##------------------------------------------------------------------------------
 
-calc_gcm_stats <- function(var.info,coords,scenario,model.list,
+calc_gcm_stats <- function(var.info,coords,scenario,model.list,past.int,
                            check.dir,base.dir) {
 
   ##GCM Component
-  flag <- check_for_gcm_data(coords[1],coords[2],check.dir,'ACCESS1-0',scenario)
+  flag <- check_for_gcm_data(coords[1],coords[2],check.dir,'ACCESS1-0',scenario,past.int)
 
   vals <- matrix(NA,nrow=length(model.list),ncol=4)
 
@@ -211,7 +217,7 @@ calc_gcm_stats <- function(var.info,coords,scenario,model.list,
     if (grepl('wetbulb',var.info$name) & (gcm == 'CCSM4' | gcm == 'MPI-ESM-LR')) {
       vals[g,] <- vals[g,] <- rep(NA,4)
     } else {
-      vals[g,] <- get_var_clims(var.info,gcm.dir,coords)
+      vals[g,] <- get_var_clims(var.info,gcm.dir,coords,past.int)
     }
   }
   rv <- get.round.val(var.info$name)
@@ -222,10 +228,10 @@ calc_gcm_stats <- function(var.info,coords,scenario,model.list,
 
 ##------------------------------------------------------------------------------
 
-calc_gcm_tas_stats <- function(coords,scenario,model.list,
+calc_gcm_tas_stats <- function(coords,scenario,model.list,interval,
                                base.dir) {
 
-  intervals <- '1998-2014' ##c('1971-2000','1998-2014')
+  intervals <- interval ##'1998-2014' ##c('1971-2000','1998-2014')
 
   ##GCM Component
   vals <- array(NA,c(length(model.list),length(intervals),17))
@@ -296,7 +302,7 @@ make_table_row <- function(data.vals,rv) {
 ##------------------------------------------------------------------------------
   ##Formatted Table
 make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheets.offset,
-                                      method,rlen,write.dir) {
+                                      method,rlen,write.dir,figures) {
 
   description <- c("This file contains summary statistics for the ",
                    paste0(nearest,"CWEC2016 Weather File."),
@@ -407,6 +413,28 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
   ##create.title.panes(wb,sheet=sheet,var.name='tas',start.row=row.locs$tas[[1]][1])
   write_variables(wb,sheet=sheet,sorted.vars$tas,row.locs$tas,'tas',sheets.tas$cwec,
                               data.cols=2:16,highlights=c(7,8,11,12,15,16))
+
+  ##Add image of temperature boxplots below table values
+  tas.fig.description <- c("The plot to the left displays temperature climatologies",
+                           "from the above table. The blue 'Past' lines correspond to",
+                           "the 'Past (TMY)' column. The boxplots are computed from",
+                           "the ensemble of future projections for the 2020s, 2050s,",
+                           "and 2080s that is summarized in the 'Future' columns.") 
+  image.row <- as.numeric(tail(row.locs$tas,1)) + 2
+  insertImage(wb,sheet=sheet,file=figures$tas,width=5.25,height=3,units='in',dpi=600,
+                startRow=image.row,startCol=2)
+  writeData(wb, sheet=sheet, 'Plot Description', 
+                startRow = image.row, startCol = 6, headerStyle = titlestyle,
+            colNames=FALSE)
+  addStyle(wb,sheet=sheet,titlestyle,
+              rows=image.row,cols=6,gridExpand=FALSE,stack=FALSE)
+
+  writeData(wb, sheet=sheet, tas.fig.description, 
+                startRow = image.row+1, startCol = 6, headerStyle = textstyle,
+                colNames=FALSE)
+  addStyle(wb,sheet=sheet,textstyle,rows=seq(image.row+1,by=1,length.out=length(tas.fig.description)),
+           cols=6:10,gridExpand=TRUE,stack=TRUE)
+  
   freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
 
 
