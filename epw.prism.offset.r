@@ -22,9 +22,7 @@ list_of_epw_coordinates <- function(epw.dir,epw.files) {
 ##Search the available EPW files and find the nearest to the
 ##supplied coordinates
 
-find_closest_epw_file <- function(coords,
-                                  epw.dir='/storage/data/projects/rci/weather_files/wx_2016/') 
-                         {
+find_closest_epw_file <- function(coords,epw.dir) {            
     
   epw.files <- list.files(path=epw.dir,pattern='CWEC2016.epw')
   epw.coords <- list_of_epw_coordinates(epw.dir,epw.files)
@@ -96,7 +94,7 @@ adjust_epw_with_prism <- function(epw.data,prism.diff) {
 ##Given coordinates find the nearest weather file and adjust
 ##the temperature series based on the PRISM climatologies
 
-generate_prism_offset <- function(lon,lat,epw.dir,prism.dir,write.dir,new.location) {
+generate_prism_offset <- function(lon,lat,epw.dir,prism.dir,write.dir,new.name) {
    coords <- c(lon,lat)
    epw.closest <- find_closest_epw_file(coords,epw.dir)
    epw.closest.coords <- get_epw_coordinates(epw.closest$dir,
@@ -124,24 +122,22 @@ generate_prism_offset <- function(lon,lat,epw.dir,prism.dir,write.dir,new.locati
       ##                        epw.split[3],epw.split[4],
       ##                        epw.split[5],sep='_')
       write.epw.file <- paste0(epw.split[1],'_',epw.split[2],'_',
-                               new.location,'-offset-from-',
+                               new.name,'_offset-from_',
                                epw.split[3],'_',epw.split[4])
                               
-
       line.split <- strsplit(epw$header[1],',')[[1]]
       line.split[7] <- round(lat,3)
       line.split[8] <- round(lon,3)
       epw$header[1] <- paste0(line.split,collapse=',')
       write.epw.file(epw.offset,epw$header,
-                     paste0(epw.dir,'offsets/'),write.epw.file)
-      write.epw.file(epw.offset,epw$header,
                      write.dir,write.epw.file)
       print(write.epw.file)
-      epw.offset <- list(file=write.epw.file,dir=paste0(epw.dir,'offsets/'))
+      epw.offset <- list(file=write.epw.file,dir=write.dir)
    } else {
       epw.offset <- NULL
    }
    rv <- list(closest=epw.closest,offset=epw.offset,flag=offset.flag)
+
    return(rv)
 }
 

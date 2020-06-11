@@ -220,7 +220,7 @@ create_cwec_table_sheets <- function(epw.file,past.int,intervals,lon,lat,
                                  tmp.dir=tmp.dir)
       interval.name <- paste0(as.numeric(strsplit(interval,'-')[[1]][2]) - 20,'s')
 
-      future.epw.file <- paste0(interval.name,'_CAN_BC_',pef.split[3],'_CWEC2016.epw')
+      future.epw.file <- paste0(interval.name,'_CAN_',prov,'_',pef.split[3],'_CWEC2016.epw')
       create_ensemble_average_morphed_epw(epw.file=epw.file,
                                        variable.list=variable.list,
                                        morphed.gcm.list=morphed.gcm.list,
@@ -252,14 +252,14 @@ create_cwec_table_sheets <- function(epw.file,past.int,intervals,lon,lat,
 
    ##Create plots here using the ensemble values
 
-   ##figs <- make_summary_figures(cwec.2020s,cwec.2050s,cwec.2080s,pef.split[3],fig.dir)
-##browser()
+   figs <- make_summary_figures(cwec.2020s,cwec.2050s,cwec.2080s,pef.split[3],fig.dir)
 
    check.dir <- paste0(base.dir,'ACCESS1-0/rcp85/annual/climatologies/')
    rv <- cwec.entries
    rv <- list(cwec=cwec.entries,
               model=gcm.site.tas,
-              years=tmy.years)
+              years=tmy.years,
+              figs=figs)
 
    return(rv)
 }
@@ -303,6 +303,7 @@ gcm.list <- c('ACCESS1-0','CanESM2','CNRM-CM5','CSIRO-Mk3-6-0','GFDL-ESM2G',
               'HadGEM2-CC','HadGEM2-ES','inmcm4','MIROC5','MRI-CGCM3')
 
 ##Primary variable list
+## !!If changing this list, also change the summary file text
 variable.list <- list(list(epw='dry_bulb_temperature',gcm='tas'),
                        list(epw='relative_humidity',gcm='rhs'),
                        list(epw='dew_point_temperature',gcm='dewpoint'),
@@ -327,23 +328,23 @@ stats.list <- list(list(name='hdd',type='annual',title='HDD'),
                  list(name='txxETCCDI',type='annual',title='TXX'),
                  list(name='tasmax.annual_quantile_975',type='annual',title='Cooling 2.5%'),
                  list(name='wetbulb.annual_quantile_975',type='annual',title='Cooling (Wetbulb) 2.5%'),
-                 list(name='tas_jan',type='monthly',title='January TAS'),
-                 list(name='tas_feb',type='monthly',title='February TAS'),
-                 list(name='tas_mar',type='monthly',title='March TAS'),
-                 list(name='tas_apr',type='monthly',title='April TAS'),
-                 list(name='tas_may',type='monthly',title='May TAS'),
-                 list(name='tas_jun',type='monthly',title='June TAS'),
-                 list(name='tas_jul',type='monthly',title='July TAS'),
-                 list(name='tas_aug',type='monthly',title='August TAS'),
-                 list(name='tas_sep',type='monthly',title='September TAS'),
-                 list(name='tas_oct',type='monthly',title='October TAS'),
-                 list(name='tas_nov',type='monthly',title='November TAS'),
-                 list(name='tas_dec',type='monthly',title='December TAS'),
-                 list(name='tas_win',type='monthly',title='Winter TAS'),
-                 list(name='tas_spr',type='monthly',title='Spring TAS'),
-                 list(name='tas_sum',type='monthly',title='Summer TAS'),
-                 list(name='tas_fal',type='monthly',title='Fall TAS'),
-                 list(name='tas_ann',type='monthly',title='Annual TAS'))
+                 list(name='tas_jan',type='monthly',title='January Tmean'),
+                 list(name='tas_feb',type='monthly',title='February Tmean'),
+                 list(name='tas_mar',type='monthly',title='March Tmean'),
+                 list(name='tas_apr',type='monthly',title='April Tmean'),
+                 list(name='tas_may',type='monthly',title='May Tmean'),
+                 list(name='tas_jun',type='monthly',title='June Tmean'),
+                 list(name='tas_jul',type='monthly',title='July Tmean'),
+                 list(name='tas_aug',type='monthly',title='August Tmean'),
+                 list(name='tas_sep',type='monthly',title='September Tmean'),
+                 list(name='tas_oct',type='monthly',title='October Tmean'),
+                 list(name='tas_nov',type='monthly',title='November Tmean'),
+                 list(name='tas_dec',type='monthly',title='December Tmean'),
+                 list(name='tas_win',type='monthly',title='Winter Tmean'),
+                 list(name='tas_spr',type='monthly',title='Spring Tmean'),
+                 list(name='tas_sum',type='monthly',title='Summer Tmean'),
+                 list(name='tas_fal',type='monthly',title='Fall Tmean'),
+                 list(name='tas_ann',type='monthly',title='Annual Tmean'))
 
 
 tmp.dir <- '/local_temp/ssobie/morph/'
@@ -353,7 +354,7 @@ if (!file.exists(tmp.dir)) {
    dir.create(paste0(tmp.dir,'epw_factors/'),recursive=TRUE)
 }
 
-file.version <- 'TESTING'
+file.version <- '2.2'
 past.int <- '1998-2014'
 intervals <- c('2011-2040','2041-2070','2071-2100')
 
@@ -371,20 +372,33 @@ print('Copying EPW factors to tmp (31Gb)')
 ##  file.copy(from=other.interval.files,to=paste0(tmp.dir,'epw_factors/'),overwrite=T)
 ##}
 
+provinces <- 'british_columbia'
 
 for(province in provinces) {
 
+   prov <- switch(province,
+               alberta='AB',new_brunswick='NB',
+               northwest_territories='NT',nunavut='NU',
+               prince_edward_island='PE',saskatchewan='SK',
+               british_columbia='BC',manitoba='MB',
+               newfoundland_and_labrador='NL',        
+               nova_scotia='NS',ontario='ON',
+               quebec='QC',yukon='YK')
+
+
    cwec.2016.files <- list.files(path=paste0(epw.dir,province,'/'),pattern='_CWEC2016.epw')
    ###cwec.2016.files <- cwec.2016.files[65:75] ##cwec.2016.files[c(-5,-55)] ##Remove lighthouses without grid data
-   
+
+   cwec.2016.files <- cwec.2016.files[42]   
+
    for (file in cwec.2016.files) {
       epw.coords <- get_epw_coordinates(paste0(epw.dir,province,'/'),file)
       epw.name <- strsplit(file,'_')[[1]][3]
       epw.stn.names <- strsplit(epw.name,'\\.')[[1]]
       new.location <- paste(epw.stn.names[-length(epw.stn.names)],collapse='_')  ##remove the stn id
 
-      tas.fig <- paste0(fig.dir,province,'/',new.location,'/',epw.name,'_mean_temperature_boxplots.png')
-      wx.figures <- list(tas=tas.fig)
+      ##tas.fig <- paste0(fig.dir,province,'/',new.location,'/',epw.name,'_mean_temperature_boxplots.png')
+      ##wx.figures <- list(tas=tas.fig)
 
       ##Check for presence of temperature data (coastal sites may coincide with ocean cells)
       tas.check <- read_cell(var.name='tas',lonc=epw.coords[1],latc=epw.coords[2],
@@ -422,7 +436,8 @@ for(province in provinces) {
                                 var.list=stats.list,
                                 sheets.closest=sheets.closest,
                                 sheets.offset=NULL,
-                                method=method,rlen=rlen,write.dir,wx.figures)
+                                file.version=file.version,
+                                method=method,rlen=rlen,write.dir)
          browser()
       }
 

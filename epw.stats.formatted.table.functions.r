@@ -188,7 +188,7 @@ create_temp_climatologies_top_pane <- function(wb,sheet,site) {
 ##                              'Model Past',
       pane.titles <- list(site,'Past (TMY)',
                               'TMY Year',
-                              'Model Past',
+                              'BCCAQv2 Past',
                               '2020s Future',' ',
                               '2020s Change',' ',
                               '2050s Future',' ',

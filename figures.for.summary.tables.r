@@ -21,7 +21,7 @@ mean_temperature_boxplot <- function(cwec.2020s,cwec.2050s,cwec.2080s,
    yvals <- pretty(cwec.tas) ##c(-5,40,5)
    
    plot.file <- paste0(fig.dir,site,'_mean_temperature_boxplots.png')    
-   plot.title <- 'Monthly Mean Average Temperatures'
+   plot.title <- 'Monthly Average Temperatures'
    y.label <- 'Temperature (\u00B0C)'
 
 
@@ -51,6 +51,9 @@ mean_temperature_boxplot <- function(cwec.2020s,cwec.2050s,cwec.2080s,
     legend('topright',legend=c('Past','2020s','2050s','2080s'),col=c('blue','goldenrod','orange','red'),cex=2,pch=15)
 
     dev.off()  
+
+    rv <- plot.file
+    return(rv)
 }
 
 ##-----------------------------------------------------------------------------------
@@ -61,7 +64,9 @@ make_summary_figures <- function(cwec.2020s,cwec.2050s,cwec.2080s,
                                  site,fig.dir) {
 
    ##Mean temperature
-   mean_temperature_boxplot(cwec.2020s,cwec.2050s,cwec.2080s,
-                            site,fig.dir)
+   plot.file <- mean_temperature_boxplot(cwec.2020s,cwec.2050s,cwec.2080s,
+                                         site,fig.dir)
+   rv <- list(tas=plot.file)
+   return(rv)
 
 }

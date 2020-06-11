@@ -10,18 +10,16 @@ source('/storage/home/ssobie/code/repos/epw/epw.support.functions.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/epw.projected.stats.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/figures.for.summary.tables.r',chdir=T)
 
-
 ##------------------------------------------------------------------------------
 ##Read specified cell from the precomputed morphing values
 
 read_cell <- function(var.name,lonc,latc,input.file,read.dir) {
 
   if (length(input.file) != 1) {
-    print(input.file)
+    print(input.file)              
     stop('More than one input file')
   }
 
-  print(input.file)              
   nc <- nc_open(paste(read.dir,input.file,sep=''))
   time.atts <- ncatt_get(nc,'time')
   time.calendar <- time.atts$calendar
@@ -51,6 +49,7 @@ read_cell <- function(var.name,lonc,latc,input.file,read.dir) {
      }
      data <- data.fix
      time.series <- seq(from=as.Date('1995-01-01'),by='day',to=as.Date('1995-12-31'))
+     print('Zad')
      browser()
   }
   nc_close(nc)
@@ -84,7 +83,8 @@ get_morphing_function <- function(epw.var) {
 
 morph_epw_by_each_gcm <- function(epw.file,variable.list,lon,lat,
                                   gcm.list,gcm.dir,
-                                  scenario,interval,
+                                  scenario,
+                                  past.int,proj.int,
                                   method,rlen) {
 
    pef.split <- strsplit(epw.file$file,'_')[[1]]
@@ -151,11 +151,15 @@ create_ensemble_average_morphed_epw <- function(epw.file,variable.list,morphed.g
        morphed.gcm <- morphed.gcm.list[[var.names$epw]]
        epw.ens.present$data[,get_field_index(var.names$epw)] <- round(apply(morphed.gcm,2,mean),rd)
     }
-    short.names <- paste(unlist(lapply(variable.list,function(x){get_short_name(x$epw)})),collapse='|')
+    short.names <- paste(unlist(lapply(variable.list,function(x){get_short_name(x$epw)})),collapse=',')
     epw.ens.present$header[1] <- paste0(epw.present$header[1],
                                         ' | Morphed:',short.names,
                                         ' | File Version: ',file.version,
                                         ' | Creation Date: ',format(Sys.time(),'%Y-%m-%d'))
+ 
+##    epw.ens.present$header[1] <- paste0(epw.present$header[1],
+##                                        ' Morphed:',short.names,
+##                                        ' with an ENSEMBLE of 10 GCMs, Daily Morphing Factors with 21-Day Rolling Mean')
     
     write.epw.file(epw.ens.present$data,epw.ens.present$header,paste0(tmp.dir,'gcm_epws/'),future.epw.file)
     ##This copy below is passed to be used externally
@@ -172,9 +176,10 @@ calculate_epw_file_statistics <- function(epw.file,interval,gcm.list,stats.names
 
   past.cwec <- calc_cwec_values(epw.file$file,epw.file$dir,stats.names)             
   proj.cwec <- matrix(NA,nrow=glen,ncol=length(stats.names))
-
+  
   for (g in seq_along(gcm.list)) {
      gcm <- gcm.list[g]
+     print(paste0(gcm,'_',interval,'_',epw.file$file))
      proj.cwec[g,] <- calc_cwec_values(paste0(gcm,'_',interval,'_',epw.file$file),paste0(tmp.dir,'gcm_epws/'),stats.names)              
   }       
   rv <- list(past=past.cwec,proj=proj.cwec)
@@ -184,13 +189,14 @@ calculate_epw_file_statistics <- function(epw.file,interval,gcm.list,stats.names
 ##------------------------------------------------------------------------------
 ##
 
-create_cwec_table_sheets <- function(epw.file,intervals,lon,lat,
+create_cwec_table_sheets <- function(epw.file,past.int,intervals,lon,lat,
                                      gcm.list,variable.list,stats.list,
-                                     tmp.dir,scenario,
-                                     method,rlen,write.dir) {
+                                     tmp.dir,scenario,file.version,
+                                     method,rlen,write.dir,fig.dir) {
    coords <- c(lon,lat)
-   base.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/high_res_downscaling/bccaq_gcm_bc_subset/'
-   gcm.site.tas  <- calc_gcm_tas_stats(coords,scenario,gcm.list,base.dir)
+   ###base.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/high_res_downscaling/bccaq_gcm_bc_subset/'
+   base.dir <- '/storage/data/climate/downscale/BCCAQ2/bccaqv2_climatologies/'
+   gcm.site.tas  <- calc_gcm_tas_stats(coords,scenario,gcm.list,past.int,base.dir)
 
    pef.split <- strsplit(epw.file$file,'_')[[1]]
    epw.present <- read.epw.file(epw.file$dir,epw.file$file) 
@@ -203,19 +209,22 @@ create_cwec_table_sheets <- function(epw.file,intervals,lon,lat,
       morphed.gcm.list <- morph_epw_by_each_gcm(epw.file=epw.file,
                               variable.list=variable.list,lon,lat,
                               gcm.list=gcm.list,gcm.dir=paste0(tmp.dir,'epw_factors/'),
-                              scenario=scenario,interval=interval,
+                              scenario=scenario,
+                              past.int=past.int,proj.int=interval,
                               method=method,rlen=rlen)
 
       create_gcm_morphed_epw_files(morphed.gcm.list=morphed.gcm.list,
                                  variable.list=variable.list,
-                                 gcm.list=gcm.list,epw.file=epw.file,interval=interval,
-                                tmp.dir=tmp.dir)
+                                 gcm.list=gcm.list,epw.file=epw.file,
+                                 interval=interval,
+                                 tmp.dir=tmp.dir)
       interval.name <- paste0(as.numeric(strsplit(interval,'-')[[1]][2]) - 20,'s')
-                                                              
-      future.epw.file <- paste0(interval.name,'_CAN_BC_',pef.split[3],'_CWEC2016.epw')
+
+      future.epw.file <- paste0(interval.name,'_CAN_',prov,'_',pef.split[3],'_CWEC2016.epw')
       create_ensemble_average_morphed_epw(epw.file=epw.file,
                                        variable.list=variable.list,
                                        morphed.gcm.list=morphed.gcm.list,
+                                       file.version=file.version,
                                        write.dir=write.dir,future.epw.file=future.epw.file)
    }  
 
@@ -241,157 +250,20 @@ create_cwec_table_sheets <- function(epw.file,intervals,lon,lat,
    } 
    names(cwec.entries) <- stats.names
 
+   ##Create plots here using the ensemble values
+
+   figs <- make_summary_figures(cwec.2020s,cwec.2050s,cwec.2080s,pef.split[3],fig.dir)
 
    check.dir <- paste0(base.dir,'ACCESS1-0/rcp85/annual/climatologies/')
-
-   ##tas.flag <- unlist(lapply(stats.list,function(x){grepl('tas_',x$name)}))
-   ##gcm.site.list <- lapply(stats.list[!tas.flag],calc_gcm_stats,coords,scenario,gcm.list,check.dir,base.dir)
-
-
-   ###names(gcm.site.list) <- stats.names
-   ###rv <- cwec.entries
+   rv <- cwec.entries
    rv <- list(cwec=cwec.entries,
               model=gcm.site.tas,
-              years=tmy.years)  
+              years=tmy.years,
+              figs=figs)
+
    return(rv)
 }
 
 
 
 ##------------------------------------------------------------------------------
-
-##**************************************************************************************
-##---------------------------------------
-##Info passed in from submission script
-scenario <- 'rcp85'
-new.location <- 'Royal_Columbian_Hospital'
-
-lon <- -122.890853 ## -123.31 ###
-lat <- 49.226618 ##48.5 ###
-
-method <- 'roll'
-rlen <- '21'
-
-##args <- commandArgs(trailingOnly=TRUE)
-##for(i in 1:length(args)){
-##    eval(parse(text=args[[i]]))
-##}
-
-if (method!='roll') { 
-  rlen <- ''
-}
-
-##--------------------------------------
-##Base directories and info
-
-prism.dir <- '/storage/data/climate/PRISM/dataportal/'
-epw.dir <- '/storage/data/projects/rci/weather_files/wx_2016/' 
-offsets.dir <- '/storage/data/projects/rci/weather_files/wx_2016/offsets/'
-wx.morph.dir <- '/storage/data/projects/rci/weather_files/wx_2016/wx_2016_morphed_files/'
-
-
-morph.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/bccaq2_tps/epw_factors/'
-
-gcm.list <- c('ACCESS1-0','CanESM2','CNRM-CM5','CSIRO-Mk3-6-0','GFDL-ESM2G',
-              'HadGEM2-CC','HadGEM2-ES','inmcm4','MIROC5','MRI-CGCM3')
-
-variable.list <- list(list(epw='dry_bulb_temperature',gcm='tas'),
-                       list(epw='relative_humidity',gcm='rhs'))
-
-##                       list(epw='dew_point_temperature',gcm='dewpoint'),
-##                       list(epw='diffuse_horizontal_radiation',gcm='rsds'),
-##                       list(epw='global_horizontal_radiation',gcm='rsds'),
-##                       list(epw='atmospheric_station_pressure',gcm='psl'),                       
-##                       list(epw='direct_normal_radiation',gcm='clt'),
-##                       list(epw='wind_speed',gcm='wspd'),
-##                       list(epw='total_sky_cover',gcm='clt'),
-##                       list(epw='opaque_sky_cover',gcm='clt'))
-
-stats.list <- list(list(name='hdd',type='annual',title='HDD'),
-                 list(name='tnnETCCDI',type='annual',title='TNN'),
-                 list(name='tasmin.annual_quantile_010',type='annual',title='Heating 99.0%'),
-                 list(name='wetbulb.annual_quantile_010',type='annual',title='Heating (Wetbulb) 99.0%'),
-                 list(name='cdd',type='annual',title='CDD'),
-                 list(name='txxETCCDI',type='annual',title='TXX'),
-                 list(name='tasmax.annual_quantile_975',type='annual',title='Cooling 2.5%'),
-                 list(name='wetbulb.annual_quantile_975',type='annual',title='Cooling (Wetbulb) 2.5%'),
-                 list(name='tas_jan',type='monthly',title='January TAS'),                 
-                 list(name='tas_feb',type='monthly',title='February TAS'),                 
-                 list(name='tas_mar',type='monthly',title='March TAS'),                 
-                 list(name='tas_apr',type='monthly',title='April TAS'),                 
-                 list(name='tas_may',type='monthly',title='May TAS'),                 
-                 list(name='tas_jun',type='monthly',title='June TAS'),                 
-                 list(name='tas_jul',type='monthly',title='July TAS'),                 
-                 list(name='tas_aug',type='monthly',title='August TAS'),                 
-                 list(name='tas_sep',type='monthly',title='September TAS'),                 
-                 list(name='tas_oct',type='monthly',title='October TAS'),                 
-                 list(name='tas_nov',type='monthly',title='November TAS'),                 
-                 list(name='tas_dec',type='monthly',title='December TAS'),
-                 list(name='tas_win',type='monthly',title='Winter TAS'),                 
-                 list(name='tas_spr',type='monthly',title='Spring TAS'),                 
-                 list(name='tas_sum',type='monthly',title='Summer TAS'),                 
-                 list(name='tas_fal',type='monthly',title='Fall TAS'),                 
-                 list(name='tas_ann',type='monthly',title='Annual TAS'))
-
-
-tmp.dir <- '/local_temp/ssobie/epw/'
-if (!file.exists(tmp.dir)) {
-   dir.create(tmp.dir,recursive=TRUE)
-   dir.create(paste0(tmp.dir,'gcm_epws/'),recursive=TRUE)
-}
-
-intervals <- c('2011-2040','2041-2070','2071-2100')
-
-##--------------------------------------------------------------------------------
-##First compute the offset file with 
-##PRISM climatologies
-
-epw.files <- generate_prism_offset(lon,lat,epw.dir,prism.dir,wx.morph.dir,new.location)
-
-nearest.epw <- strsplit(epw.files$closest$file,'_')[[1]][3]
-nearest.epw.coords <- epw.files$closest$coords
-n.lon <- nearest.epw.coords[1]
-n.lat <- nearest.epw.coords[2]
-
-##--------------------------------------
-##Copy the morphing factors to temporary 
-##directory
-print('Copying EPW factors to tmp (31Gb)')
-##if (!file.exists(tmp.dir)) {
-##  file.copy(from=morph.dir,to=tmp.dir,recursive=TRUE)  ##Change to omit 1971-2000
-##}
-
-epw.coords <- get_epw_coordinates(epw.files$closest$dir,epw.files$closest$file)
-
-print(new.location)
-write.dir <- paste0(wx.morph.dir,new.location,'/')
-if (!file.exists(write.dir)) {
-   dir.create(write.dir,recursive=TRUE)
-}
-n.lon <- epw.coords[1]
-n.lat <- epw.coords[2]
-
-sheets.closest <- create_cwec_table_sheets(epw.files$closest,
-                                           intervals,n.lon,n.lat,
-                                           gcm.list,variable.list,stats.list,
-                                           tmp.dir,scenario,
-                                           method,rlen,write.dir)
-if (!is.null(epw.files$offset)) {
-   sheets.offset <- create_cwec_table_sheets(epw.files$offset,
-                                             intervals,lon=lon,lat=lat,
-                                             gcm.list,variable.list,stats.list,
-                                             tmp.dir,scenario,
-                                             method,rlen,write.dir)
-} else {
-   sheets.offset <- NULL
-}
-
-make_formated_stats_table(nearest=nearest.epw,site=new.location,
-                          var.list=stats.list,
-                          sheets.closest=sheets.closest,
-                          sheets.offset=sheets.offset,
-                          method=method,rlen=rlen,write.dir)
-
-##--------------------------------------
-###clean.files <- list.files(path=tmp.dir,recursive=TRUE,full.name=T)
-###file.remove(clean.files)

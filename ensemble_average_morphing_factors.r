@@ -96,7 +96,7 @@ gcm.list <- c('ACCESS1-0','CanESM2','CNRM-CM5','CSIRO-Mk3-6-0','GFDL-ESM2G',
 ##morph.name <- 'alpha_dewpoint'
 ##var.name <- 'alpha_dewpoint'
 
-past.int <- '2004-2018'
+past.int <- '1998-2014'
 
 testing <- FALSE
 if (testing) {

@@ -65,8 +65,16 @@ make_canada_plot <- function(morph.name,var.name,plot.file,plot.title,
       class.breaks <- get.class.breaks(var.name,type='anomaly',map.range,manual.breaks='')
    }
    
-   colour.ramp <- get.legend.colourbar(var.name=var.name,map.range=map.range,
-                                       my.bp=0,class.breaks=class.breaks,
+   col.var <- switch(var.name,
+                     clt='pr',
+                     psl='pr',
+                     rsds='tasmax',
+                     alpha_tasmax_tasmin='tasmax',
+                     delta_tas='tasmax')
+   bp <- 0
+   if (grepl('alpha',morph.name)) {bp <- 1}
+   colour.ramp <- get.legend.colourbar(var.name=col.var,map.range=map.range,
+                                       my.bp=bp,class.breaks=class.breaks,
                                        type='anomaly')
    map.class.breaks.labels <- get.class.break.labels(class.breaks)
 
@@ -181,33 +189,43 @@ for (i in seq_along(epw.lons)) {
 ##-------------------------------------------------------------------
 ##Morphing Factors for illustration
 
-var.name <- 'tas' ##'alpha_tas' ##
-morph.title <- 'Delta Tas' ##'Alpha Tasmax/Tasmin' ##
-morph.name <- 'delta_tas' ##'alpha_tasmax_tasmin'  ##
+var.name <- 'rsds' ##'alpha_tas' ##
+morph.title <- 'Alpha Shortwave' ##'Alpha Tasmax/Tasmin' ##
+morph.name <- 'alpha_rsds' ##'alpha_tasmax_tasmin'  ##
 past.int <- '1998-2014'
 proj.int <- '2041-2070'
 
 
-##day <- 335 ##Dec 1
+day <- 335 ##Dec 1
 ##day <- 32 ##Feb 1
 ##day <- 244 ##Sept 1
-day <- 152 ##June 1 Day of the year 
+##day <- 152 ##June 1 Day of the year 
 
 year.date <- as.Date(paste0('1995-',sprintf('%03d',day)),format='%Y-%j')
 text.date <- format(year.date,'%B %d')
 
-shared.breaks <- round(seq(0.4,4,0.4),1)
-diff.breaks <- round(seq(-0.6,0.6,by=0.2),1)
+##CLT Breaks
+##shared.breaks <- seq(0.8,1.2,0.05)
+##PSL Breaks
+shared.breaks <- seq(0.95,1.05,0.01)
+##RSDS Breaks
+shared.breaks <- seq(0.90,1.1,0.05)
+
+
+##Temp breaks
+##shared.breaks <- round(seq(0.4,4,0.4),1)
+##diff.breaks <- round(seq(-0.6,0.6,by=0.2),1)
 
 type <- 'GCM'
 gcm.plot.title <- paste0(morph.title,' ',type,' Ensemble Average\n',text.date)
 gcm.plot.file <- paste0(tolower(type),'_ens_avg_',tolower(morph.name),'_',
                         past.int,'_',proj.int,'_',gsub(' ','_',tolower(text.date)),'.png')
-gcm.morph.dir <- paste0('/storage/data/climate/downscale/BCCAQ2/epw_factors/ens_avg_',tolower(type),'_',past.int,'/')
+gcm.morph.dir <- paste0('/storage/data/climate/downscale/CMIP5/epw_factors/ens_avg_',tolower(type),'_',past.int,'/')
 gcm.morph.file <- paste0('roll21_',morph.name,'_ENSEMBLE_',type,'_',past.int,'_',proj.int,'.nc')
 gcm.morph.brick <- brick(paste0(gcm.morph.dir,gcm.morph.file))
 gcm.morph.day <- subset(gcm.morph.brick,day)
 gcm.morph.proj <- projectRaster(gcm.morph.day,crs=CRS(can.crs))
+
 if (1==1) {
 make_canada_plot(morph.name,var.name,
                 gcm.plot.file,gcm.plot.title,
@@ -217,6 +235,7 @@ make_canada_plot(morph.name,var.name,
 }
 
 type <- 'BCCAQ2'
+if (1==0) {
 bccaq2.plot.title <- paste0(morph.title,' ',type,' Ensemble Average\n',text.date)
 bccaq2.plot.file <- paste0(tolower(type),'_ens_avg_',tolower(morph.name),'_',
                            past.int,'_',proj.int,'_',gsub(' ','_',tolower(text.date)),'.png')
@@ -226,13 +245,15 @@ bccaq2.morph.brick <- brick(paste0(bccaq2.morph.dir,bccaq2.morph.file))
 bccaq2.morph.day <- subset(bccaq2.morph.brick,day)
 bccaq2.morph.proj <- projectRaster(bccaq2.morph.day,crs=CRS(can.crs))
 
-if (1==1) {
+
 make_canada_plot(morph.name,var.name,
                  bccaq2.plot.file,bccaq2.plot.title,
                  bccaq2.morph.proj,
                  epw.proj.coords,can.crs,
                  class.breaks=shared.breaks)
 }
+
+if (1==0) {
 
 ##Difference
 diff.plot.title <- paste0(morph.title,' Difference (BCCAQ2-GCM) in Ensemble Average\n',text.date)
@@ -250,3 +271,4 @@ make_canada_plot(morph.name,var.name,
 
 
 
+}

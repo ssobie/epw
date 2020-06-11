@@ -302,19 +302,37 @@ make_table_row <- function(data.vals,rv) {
 ##------------------------------------------------------------------------------
   ##Formatted Table
 make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheets.offset,
-                                      method,rlen,write.dir,figures) {
+                                      file.version,
+                                      method,rlen,write.dir) {
 
   description <- c("This file contains summary statistics for the ",
-                   paste0(nearest,"CWEC2016 Weather File."),
+                   paste0(nearest,"CWEC2016 Weather File"),
                    "A description of each variable can be seen by hovering over the variable name in ",
                    "Column A. The 'Past (TMY)' column summarizes the data from",
                    paste0("CAN_BC_",nearest,"_CWEC2016.epw"),
                    "while the remaining columns summarize future shifted values (i.e. data from files:",
                    paste0("2020s_CAN_BC_",nearest,"_CWEC2016.epw"),
                    paste0("2050s_CAN_BC_",nearest,"_CWEC2016.epw"),
-                   paste0("2080s_CAN_BC_",nearest,"_CWEC2016.epw)."),
-                   "Future files are created by applying daily morphing factors (smoothed with a",
-                   "21-day rolling mean) from an ensemble of 10 global climate models.")
+                   paste0("2080s_CAN_BC_",nearest,"_CWEC2016.epw)"),
+                   "which are available from: https://pacificclimate.org/data/weather-files",
+                   "For a description of the TMY methodology see:", 
+                   "http://climate.onebuilding.org/papers",
+                   "For the complete set of CWEC20126 files see: ",
+                   "https://climate.weather.gc.ca/prods_servs/engineering_e.html")
+                 
+  method.description <-  c(paste0("Future files (Version ",file.version,") are created by applying daily"),
+                   "morphing factors (smoothed with a 21-day rolling mean) from an ensemble of",
+                   "10 global climate models. Morphing is applied to the variables:",
+                   "dry bulb temperature, dewpoint temperature, relative humidity, surface pressure",
+                   "Dry bulb temperature morphing factors are obtained from downscaled (BCCAQv2)",
+                   "climate models. Morphing factors for other variables are obtained from",
+                   "GCMs interpolated to the BCCAQv2 resolution (about 10 km).",
+                   "For more information on the morphing procedure see:",
+                   "www.pacificclimate.org/sites/default/files/Eketal_2018_Proceedings_22_Feb_2019.pdf",
+                   "For a detailed description of BCCAQv2 see:",
+                   "https://pacificclimate.org/data/statistically-downscaled-climate-scenarios")
+
+                   
   if (!is.null(sheets.offset)) {
      description <- c(description," ",
                       "The 'Adjusted Weather File Station' tab of this file contains past and future-shifted",
@@ -343,6 +361,7 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
   titlestyle <- createStyle(fgFill = 'white', halign = "LEFT",textDecoration = "Bold",
                            fontColour = "black",bgFill='white')
 
+  ##File Description
   writeData(wb, sheet=sheet, 'File Description', startRow = desc.start-1, startCol = 2, headerStyle = titlestyle,
             colNames=FALSE)
   addStyle(wb,sheet=sheet,titlestyle,rows=tail(unlist(row.locs$derived),1)+2,cols=2,gridExpand=FALSE,stack=FALSE)
@@ -352,6 +371,21 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
   writeData(wb, sheet=sheet, description, startRow = desc.start, startCol = 2, headerStyle = textstyle,
             colNames=FALSE)
   addStyle(wb,sheet=sheet,textstyle,rows=seq(desc.start,by=1,length.out=length(description)),cols=2:6,gridExpand=TRUE,stack=TRUE)
+  ##-----------
+  ##Method Description
+  meth.start <- tail(seq(desc.start,by=1,length.out=length(description)),1)+1
+  writeData(wb, sheet=sheet, 'Method Description', startRow = meth.start, startCol = 2, headerStyle = titlestyle,
+            colNames=FALSE)
+  addStyle(wb,sheet=sheet,titlestyle,rows=meth.start,cols=2,gridExpand=FALSE,stack=FALSE)
+  writeData(wb, sheet=sheet, method.description, startRow = meth.start+1, startCol = 2, headerStyle = textstyle,
+            colNames=FALSE)
+  addStyle(wb,sheet=sheet,textstyle,rows=seq(meth.start+1,by=1,length.out=length(method.description)),
+              cols=2:6,gridExpand=TRUE,stack=TRUE)
+
+
+  ##-----------
+
+
   freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
 
   if (!is.null(sheets.offset)) {
@@ -421,19 +455,19 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
                            "the ensemble of future projections for the 2020s, 2050s,",
                            "and 2080s that is summarized in the 'Future' columns.") 
   image.row <- as.numeric(tail(row.locs$tas,1)) + 2
-  insertImage(wb,sheet=sheet,file=figures$tas,width=5.25,height=3,units='in',dpi=600,
+  insertImage(wb,sheet=sheet,file=sheets.closest$figs$tas,width=5.25,height=3,units='in',dpi=600,
                 startRow=image.row,startCol=2)
   writeData(wb, sheet=sheet, 'Plot Description', 
-                startRow = image.row, startCol = 6, headerStyle = titlestyle,
+                startRow = image.row, startCol = 7, headerStyle = titlestyle,
             colNames=FALSE)
   addStyle(wb,sheet=sheet,titlestyle,
-              rows=image.row,cols=6,gridExpand=FALSE,stack=FALSE)
+              rows=image.row,cols=7,gridExpand=FALSE,stack=FALSE)
 
   writeData(wb, sheet=sheet, tas.fig.description, 
-                startRow = image.row+1, startCol = 6, headerStyle = textstyle,
+                startRow = image.row+1, startCol = 7, headerStyle = textstyle,
                 colNames=FALSE)
   addStyle(wb,sheet=sheet,textstyle,rows=seq(image.row+1,by=1,length.out=length(tas.fig.description)),
-           cols=6:10,gridExpand=TRUE,stack=TRUE)
+           cols=7:11,gridExpand=TRUE,stack=TRUE)
   
   freezePane(wb,sheet=sheet,firstActiveCol=2,firstActiveRow=3)
 
