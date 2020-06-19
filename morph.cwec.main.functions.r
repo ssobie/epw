@@ -7,7 +7,8 @@ source('/storage/home/ssobie/code/repos/epw/read.write.epw.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/epw.precomputed.belcher.functions.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/epw.prism.offset.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/epw.support.functions.r',chdir=T)
-source('/storage/home/ssobie/code/repos/epw/epw.projected.stats.r',chdir=T)
+##source('/storage/home/ssobie/code/repos/epw/epw.projected.stats.r',chdir=T)
+source('/storage/home/ssobie/code/repos/epw/epw.with.about.tab.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/figures.for.summary.tables.r',chdir=T)
 
 ##------------------------------------------------------------------------------
@@ -16,6 +17,7 @@ source('/storage/home/ssobie/code/repos/epw/figures.for.summary.tables.r',chdir=
 read_cell <- function(var.name,lonc,latc,input.file,read.dir) {
 
   if (length(input.file) != 1) {
+    print(read.dir)
     print(input.file)              
     stop('More than one input file')
   }
@@ -197,6 +199,7 @@ create_cwec_table_sheets <- function(epw.file,past.int,intervals,lon,lat,
    ###base.dir <- '/storage/data/climate/downscale/BCCAQ2+PRISM/high_res_downscaling/bccaq_gcm_bc_subset/'
    base.dir <- '/storage/data/climate/downscale/BCCAQ2/bccaqv2_climatologies/'
    gcm.site.tas  <- calc_gcm_tas_stats(coords,scenario,gcm.list,past.int,base.dir)
+   gcm.base.tas  <- calc_gcm_tas_stats(coords,scenario,gcm.list,'1971-2000',base.dir)
 
    pef.split <- strsplit(epw.file$file,'_')[[1]]
    epw.present <- read.epw.file(epw.file$dir,epw.file$file) 
@@ -258,6 +261,7 @@ create_cwec_table_sheets <- function(epw.file,past.int,intervals,lon,lat,
    rv <- cwec.entries
    rv <- list(cwec=cwec.entries,
               model=gcm.site.tas,
+              base=gcm.base.tas,
               years=tmy.years,
               figs=figs)
 

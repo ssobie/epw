@@ -166,12 +166,30 @@ create.frozen.top.pane <- function(wb,sheet,site) {
       writeData(wb, sheet=sheet, pane.titles, startRow = 1, startCol = 1, headerStyle = fz1,
                 borders = "rows", borderStyle = "medium")
       addStyle(wb,sheet=sheet,fz1,rows=1,cols=1:14,gridExpand=FALSE,stack=FALSE)
+      s1 <- createStyle(fontSize = 12, fontColour = "black")
+      c1 <- createComment(comment = 'Variables calculated from the CWEC2016 TMY file',style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 2, row = 1, comment = c1)
       mergeCells(wb,sheet=sheet,cols=c(3,4),rows=1)
+      com <- createComment(comment = 'Variables calculated from the morphed TMY file for the 2020s',style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 3, row = 1, comment = com)
       mergeCells(wb,sheet=sheet,cols=c(5,6),rows=1)
+      com <- createComment(comment = 'Differences in the variables between 2020s morphed TMY file and the CWEC2016 TMY File',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 5, row = 1, comment = com)
       mergeCells(wb,sheet=sheet,cols=c(7,8),rows=1)
+      com <- createComment(comment = 'Variables calculated from the morphed TMY file for the 2050s',style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 7, row = 1, comment = com)
       mergeCells(wb,sheet=sheet,cols=c(9,10),rows=1)
+      com <- createComment(comment = 'Differences in the variables between 2050s morphed TMY file and the CWEC2016 TMY File',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 9, row = 1, comment = com)
       mergeCells(wb,sheet=sheet,cols=c(11,12),rows=1)
+      com <- createComment(comment = 'Variables calculated from the morphed TMY file for the 2080s',style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 11, row = 1, comment = com)
       mergeCells(wb,sheet=sheet,cols=c(13,14),rows=1)
+      com <- createComment(comment = 'Differences in the variables between 2080s morphed TMY file and the CWEC2016 TMY File',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 13, row = 1, comment = com)
       ##freezePane(wb,sheet=sheet,firstRow=TRUE)
 
       prct.header <- list(' ',' ','Average','10th%-90th%','Average','10th%-90th%','Average','10th%-90th%',
@@ -179,6 +197,58 @@ create.frozen.top.pane <- function(wb,sheet,site) {
       writeData(wb, sheet=sheet, prct.header, startRow = 2, startCol = 1, headerStyle = fz1,
                 borders = "rows", borderStyle = "medium")
       addStyle(wb,sheet=sheet,fz1,rows=2,cols=1:14,gridExpand=FALSE,stack=FALSE)
+
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2020s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 3, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2020s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 4, row = 2, comment = com)
+
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2020s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 5, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2020s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 6, row = 2, comment = com)
+
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2050s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 7, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2050s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 8, row = 2, comment = com)
+ 
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2050s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 9, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2050s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 10, row = 2, comment = com)
+
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2080s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 11, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2080s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 12, row = 2, comment = com)
+
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2080s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 13, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2080s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 14, row = 2, comment = com)
+
+
+
+
       ##freezePane(wb,sheet=sheet,firstActiveRow=3)
 }
 
@@ -188,6 +258,7 @@ create_temp_climatologies_top_pane <- function(wb,sheet,site) {
 ##                              'Model Past',
       pane.titles <- list(site,'Past (TMY)',
                               'TMY Year',
+                              'BCCAQv2 Past',
                               'BCCAQv2 Past',
                               '2020s Future',' ',
                               '2020s Change',' ',
@@ -200,23 +271,95 @@ create_temp_climatologies_top_pane <- function(wb,sheet,site) {
                          border = "TopBottomLeftRight", fontColour = "black")
       writeData(wb, sheet=sheet, pane.titles, startRow = 1, startCol = 1, headerStyle = fz1,
                 borders = "rows", borderStyle = "medium")
-      addStyle(wb,sheet=sheet,fz1,rows=1,cols=1:16,gridExpand=FALSE,stack=FALSE)
-      mergeCells(wb,sheet=sheet,cols=c(5,6),rows=1)
-      mergeCells(wb,sheet=sheet,cols=c(7,8),rows=1)
-      mergeCells(wb,sheet=sheet,cols=c(9,10),rows=1)
-      mergeCells(wb,sheet=sheet,cols=c(11,12),rows=1)
-      mergeCells(wb,sheet=sheet,cols=c(13,14),rows=1)
-      mergeCells(wb,sheet=sheet,cols=c(15,16),rows=1)
+      addStyle(wb,sheet=sheet,fz1,rows=1,cols=1:17,gridExpand=FALSE,stack=FALSE)
+      s1 <- createStyle(fontSize = 12, fontColour = "black")
+      c1 <- createComment(comment = 'Mean temperatures calculated from the CWEC2016 TMY file',style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 2, row = 1, comment = c1)
+      com <- createComment(comment = 'Representative year selected for each month in the CWEC2016 TMY file',style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 3, row = 1, comment = c1)
+      com <- createComment(comment = 'Mean temperatures calculated from the model scenario past',style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 4, row = 1, comment = com)
+      writeComment(wb, sheet=sheet, col = 5, row = 1, comment = com)
+      mergeCells(wb,sheet=sheet,cols=c(6,7),rows=1)
+      com <- createComment(comment = 'Mean temperatures calculated from the morphed TMY file for the 2020s',style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 6, row = 1, comment = com)
+      mergeCells(wb,sheet=sheet,cols=c(8,9),rows=1)
+      com <- createComment(comment = 'Differences in mean temperatures between 2020s morphed TMY file and the CWEC2016 TMY File',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 8, row = 1, comment = com)
+      mergeCells(wb,sheet=sheet,cols=c(10,11),rows=1)
+      com <- createComment(comment = 'Mean temperatures calculated from the morphed TMY file for the 2050s',style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 10, row = 1, comment = com)
+      mergeCells(wb,sheet=sheet,cols=c(12,13),rows=1)
+      com <- createComment(comment = 'Differences in mean temperatures between 2050s morphed TMY file and the CWEC2016 TMY File',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 12, row = 1, comment = com)
+      mergeCells(wb,sheet=sheet,cols=c(14,15),rows=1)
+      com <- createComment(comment = 'Mean temperatures calculated from the morphed TMY file for the 2080s',style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 14, row = 1, comment = com)
+      mergeCells(wb,sheet=sheet,cols=c(16,17),rows=1)
+      com <- createComment(comment = 'Differences in mean temperatures between 2080s morphed TMY file and the CWEC2016 TMY File',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 16, row = 1, comment = com)
       ##freezePane(wb,sheet=sheet,firstRow=TRUE)
 
       ##'(1971-2000)',
-      prct.header <- list(' ',' ',' ','(1998-2014) ',
+      prct.header <- list(' ',' ',' ','(1971-2000)','(1998-2014) ',
                           'Average','10th%-90th%','Average','10th%-90th%','Average','10th%-90th%',
                           'Average','10th%-90th%','Average','10th%-90th%','Average','10th%-90th%')          
       writeData(wb, sheet=sheet, prct.header, startRow = 2, startCol = 1, headerStyle = fz1,
                 borders = "rows", borderStyle = "medium")
-      addStyle(wb,sheet=sheet,fz1,rows=2,cols=1:16,gridExpand=FALSE,stack=FALSE)
+      addStyle(wb,sheet=sheet,fz1,rows=2,cols=1:17,gridExpand=FALSE,stack=FALSE)
       ##freezePane(wb,sheet=sheet,firstActiveRow=3)
+
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2020s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 6, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2020s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 7, row = 2, comment = com)
+
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2020s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 8, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2020s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 9, row = 2, comment = com)
+
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2050s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 10, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2050s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col =11, row = 2, comment = com)
+ 
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2050s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 12, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2050s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 13, row = 2, comment = com)
+
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2080s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 14, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2080s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 15, row = 2, comment = com)
+
+      com <- createComment(comment = 'Average of the 10 model ensemble of future scenarios for the 2080s',
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 16, row = 2, comment = com)
+      com <- createComment(comment = paste0('Range of the 10 model ensemble of future scenarios for the 2080s',
+                                            ' (10th and 90th percentiles of the ensemble are shown)'),
+                           style=s1,visible=FALSE)
+      writeComment(wb, sheet=sheet, col = 17, row = 2, comment = com)
+
 }
 
 ##-----------------------------------------------------------------------------------------

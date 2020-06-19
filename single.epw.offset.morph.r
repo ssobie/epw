@@ -80,23 +80,23 @@ stats.list <- list(list(name='hdd',type='annual',title='HDD'),
                  list(name='txxETCCDI',type='annual',title='TXX'),
                  list(name='tasmax.annual_quantile_975',type='annual',title='Cooling 2.5%'),
                  list(name='wetbulb.annual_quantile_975',type='annual',title='Cooling (Wetbulb) 2.5%'),
-                 list(name='tas_jan',type='monthly',title='January TAS'),                 
-                 list(name='tas_feb',type='monthly',title='February TAS'),                 
-                 list(name='tas_mar',type='monthly',title='March TAS'),                 
-                 list(name='tas_apr',type='monthly',title='April TAS'),                 
-                 list(name='tas_may',type='monthly',title='May TAS'),                 
-                 list(name='tas_jun',type='monthly',title='June TAS'),                 
-                 list(name='tas_jul',type='monthly',title='July TAS'),                 
-                 list(name='tas_aug',type='monthly',title='August TAS'),                 
-                 list(name='tas_sep',type='monthly',title='September TAS'),                 
-                 list(name='tas_oct',type='monthly',title='October TAS'),                 
-                 list(name='tas_nov',type='monthly',title='November TAS'),                 
-                 list(name='tas_dec',type='monthly',title='December TAS'),
-                 list(name='tas_win',type='monthly',title='Winter TAS'),                 
-                 list(name='tas_spr',type='monthly',title='Spring TAS'),                 
-                 list(name='tas_sum',type='monthly',title='Summer TAS'),                 
-                 list(name='tas_fal',type='monthly',title='Fall TAS'),                 
-                 list(name='tas_ann',type='monthly',title='Annual TAS'))
+                 list(name='tas_jan',type='monthly',title='January Tmean'),                 
+                 list(name='tas_feb',type='monthly',title='February Tmean'),                 
+                 list(name='tas_mar',type='monthly',title='March Tmean'),                 
+                 list(name='tas_apr',type='monthly',title='April Tmean'),                 
+                 list(name='tas_may',type='monthly',title='May Tmean'),                 
+                 list(name='tas_jun',type='monthly',title='June Tmean'),                 
+                 list(name='tas_jul',type='monthly',title='July Tmean'),                 
+                 list(name='tas_aug',type='monthly',title='August Tmean'),                 
+                 list(name='tas_sep',type='monthly',title='September Tmean'),                 
+                 list(name='tas_oct',type='monthly',title='October Tmean'),                 
+                 list(name='tas_nov',type='monthly',title='November Tmean'),                 
+                 list(name='tas_dec',type='monthly',title='December Tmean'),
+                 list(name='tas_win',type='monthly',title='Winter Tmean'),                 
+                 list(name='tas_spr',type='monthly',title='Spring Tmean'),                 
+                 list(name='tas_sum',type='monthly',title='Summer Tmean'),                 
+                 list(name='tas_fal',type='monthly',title='Fall Tmean'),                 
+                 list(name='tas_ann',type='monthly',title='Annual Tmean'))
 
 tmp.dir <- '/local_temp/ssobie/morph/'
 if (!file.exists(tmp.dir)) {
@@ -140,6 +140,8 @@ epw.coords <- get_epw_coordinates(epw.files$closest$dir,epw.files$closest$file)
 n.lon <- epw.coords[1]
 n.lat <- epw.coords[2]
 
+if (1==0) {
+
 sheets.closest <- create_cwec_table_sheets(epw.files$closest,
                                            past.int,intervals,n.lon,n.lat,
                                            gcm.list,variable.list,stats.list,
@@ -153,6 +155,9 @@ if (!is.null(epw.files$offset)) {
                                              method,rlen,write.dir,wx.fig.dir)
 } else {
    sheets.offset <- NULL
+}
+
+
 }
 
 make_formated_stats_table(nearest=nearest.epw,site=new.location,
