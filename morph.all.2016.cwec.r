@@ -7,7 +7,8 @@ source('/storage/home/ssobie/code/repos/epw/read.write.epw.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/epw.precomputed.belcher.functions.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/epw.prism.offset.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/epw.support.functions.r',chdir=T)
-source('/storage/home/ssobie/code/repos/epw/epw.projected.stats.r',chdir=T)
+###source('/storage/home/ssobie/code/repos/epw/epw.projected.stats.r',chdir=T)
+source('/storage/home/ssobie/code/repos/epw/epw.with.about.tab.r',chdir=T)
 source('/storage/home/ssobie/code/repos/epw/figures.for.summary.tables.r',chdir=T)
 
 ##------------------------------------------------------------------------------

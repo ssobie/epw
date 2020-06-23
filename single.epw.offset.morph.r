@@ -105,7 +105,7 @@ if (!file.exists(tmp.dir)) {
    dir.create(paste0(tmp.dir,'epw_factors/'),recursive=TRUE)
 }
 
-file.version <- '2.2'
+file.version <- '2.1'
 past.int <- '1998-2014'
 intervals <- c('2011-2040','2041-2070','2071-2100')
 

@@ -17,7 +17,7 @@ download_isd_file <- function(stn.id,year,stn.name,region,write.dir) {
 
 ##*********************************************************
 
-years <- 1901:2019
+years <- 1945:2019
 
 download.dir <- '/storage/data/climate/observations/station/noaa_isd/downloads/'
 
@@ -29,7 +29,7 @@ region.metadata <- read.csv(metadata.file,header=T)
 regions <- sort(c('new_brunswick','nova_scotia','prince_edward_island',
              'yukon','british_columbia','newfoundland_and_labrador','nunavut',
              'quebec','manitoba','northwest_territories','ontario','saskatchewan'))
-
+regions <- 'alberta'
 ##Turn of the warnings from failing to find files
 oldw <- getOption('warn')
 options(warn = -1)

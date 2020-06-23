@@ -10,7 +10,7 @@ region.metadata <- read.csv(metadata.file,header=T)
 regions <- sort(c('alberta','new_brunswick','nova_scotia','prince_edward_island',
              'yukon','british_columbia','newfoundland_and_labrador','nunavut',
              'quebec','manitoba','northwest_territories','ontario','saskatchewan'))
-
+regions <- 'alberta'
 download.dir <- "/storage/data/climate/observations/station/noaa_isd/downloads/"
 
 csv.title <- c('Year','Month','Day','Hour','TAS','Dewpoint','SLP',
@@ -19,7 +19,7 @@ csv.template <- rep(NA,length(csv.title))
 
 
 for (region in regions) {
-
+   print(regions)
    region.dir <- paste0(download.dir,region,'/')
    write.dir <- paste0("/storage/data/climate/observations/station/noaa_isd/",region,"/")
    if (!file.exists(write.dir)) {
@@ -28,13 +28,16 @@ for (region in regions) {
    sites <- list.files(path=region.dir)
    
    for (site in sites) {
+      print(site)
+      print(which(sites %in% site))
       site.ix <- region.metadata$station_name %in% site
       site.info <- region.metadata[site.ix,]
 
       site.dir <- paste0(region.dir,site,'/')
       year.files <- sort(list.files(path=site.dir,pattern='.gz'))
-print('Check whether the years are sequential')
-browser()
+
+      ##Fill in missing years
+
       for (i in seq_along(year.files)) {
          file <- year.files[i]
          site.data <- read.table(gzfile(paste0(site.dir,file)),header=FALSE)
@@ -60,9 +63,9 @@ browser()
                            paste0(paste0(year.range[1],month.range[1],day.range[1]),
                                   paste0(year.range[2],month.range[2],day.range[2]),
                            collapse='-'),'.csv')
-                         
+browser()                         
       write.table(write.data,file=write.site.file,quote=F,row.name=F,col.name=F,sep=',')
-      browser()
+
    }
 
 

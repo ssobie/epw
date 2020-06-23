@@ -465,13 +465,15 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
 
   start.row <- start.row + 1
 
-  meth.description1 <- c("These future-shifted weather files were created by applying daily morphing factors",
-                         "(smoothed with a 21-day rolling mean) from an ensemble of 10 global climate models.",
-                         "Morphing is applied to the following variables:",
+  meth.description1 <- c("These future-shifted weather files were created by applying morphing factors (Belcher,",
+                         "et al., 2005) from an ensemble of 10 global climate models selected for Western Canada",
+                         "(Cannon, 2015). Daily morphing factors (smoothed with a 21-day rolling mean) are",
+                         "applied to the following variables:",
                          "dry bulb temperature, dewpoint temperature, relative humidity, surface pressure",
                          "Dry bulb temperature morphing factors are obtained from downscaled (BCCAQv2) climate",
-                         "models. Morphing factors for other variables are obtained from GCMs interpolated to the",
-                         "BCCAQv2 resolution (about 10 km). For a description of the TMY methodology see:")
+                         "models (Cannon et al., 2015). Morphing factors for other variables are obtained from",
+                         "GCMs interpolated to the BCCAQv2 resolution (about 10 km).",
+                         "For a description of the TMY methodology see:")
   writeData(wb, sheet=sheet, meth.description1, startRow = start.row, startCol = 1, headerStyle = textstyle,
             colNames=FALSE)
   addStyle(wb,sheet=sheet,textstyle,rows=seq(start.row,by=1,length.out=length(meth.description1)),cols=tab.cols,gridExpand=TRUE,stack=TRUE)
@@ -592,7 +594,7 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
   addStyle(wb,sheet=sheet,titlestyle,rows=start.row,cols=tab.cols,gridExpand=FALSE,stack=FALSE)
 
   start.row <- start.row + 1
-                        "https://www.pacificclimate.org/data/prism-climatology-and-monthly-timeseries-portal"
+
 
   temp.description <- c("The temperature climatologies tab shows monthly, seasonal, and annual temperature",
                         "averages. Temperatures for the past are shown from both the TMY file and from the",
@@ -603,6 +605,30 @@ make_formated_stats_table <- function(nearest,site,var.list,sheets.closest,sheet
   writeData(wb, sheet=sheet, temp.description, startRow = start.row, startCol = 1, headerStyle = textstyle,
                 colNames=FALSE)
   addStyle(wb,sheet=sheet,textstyle,rows=seq(start.row,by=1,length.out=length(temp.description)),cols=tab.cols,gridExpand=TRUE,stack=TRUE)
+  start.row <- start.row + length(temp.description)
+  ##--------------------------
+  ##References
+  addStyle(wb,sheet=sheet,textstyle,rows=start.row,cols=tab.cols,gridExpand=TRUE,stack=TRUE)
+  start.row <- start.row + 1
+  writeData(wb, sheet=sheet, 'References', startRow = start.row, startCol = 1, headerStyle = titlestyle,
+  colNames=FALSE)
+  addStyle(wb,sheet=sheet,titlestyle,rows=start.row,cols=tab.cols,gridExpand=FALSE,stack=FALSE)
+  start.row <- start.row + 1
+
+  ref.description <- c("Belcher, S.E., Hacker, J. and Powell, D.S. (2005) Constructing design",
+                       "weather data for future climates. Building Services Engineering Research and",
+                       "Technology. 26. 10.1191/0143624405bt112oa.",
+                        "Cannon, A.J.,Sobie, S.R., and Murdock, T.Q. (2015) Bias correction of GCM ",
+                        "precipitation by quantile mapping: How well do methods preserve changes in",
+                        "quantiles and extremes? J. Clim., 28, pp. 6938-6959",
+                        "Cannon,A.J. (2015) Selecting GCM scenarios that span the range of changes",
+                        "in a multimodel ensemble: application to CMIP5 climate extremes indices",
+                        "J. Clim. 28, pp. 1260-1267")
+
+  writeData(wb, sheet=sheet, ref.description, startRow = start.row, startCol = 1, headerStyle = textstyle,
+                colNames=FALSE)
+  addStyle(wb,sheet=sheet,textstyle,rows=seq(start.row,by=1,length.out=length(ref.description)),cols=tab.cols,gridExpand=TRUE,stack=TRUE)
+
    
   saveWorkbook(wb, paste0(write.dir,site,'_Summary_rcp85.xlsx'), overwrite = TRUE)
   print(paste0(write.dir,site,'_Summary_rcp85.xlsx'))
