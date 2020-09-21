@@ -155,11 +155,14 @@ create_rolling_means <- function(file.name,roll.name,var.name,tmp.dir) {
 ##var.name <- 'tas'
 
 
-past.int <- '2004-2018'
+past.int <- '1998-2014'
 
 testing <- FALSE
 if (testing) {
-   gcm <- 'ACCESS1-0'
+   gcm <- 'inmcm4'
+   proj <- '2011-2040'
+   type <- 'GCM'
+   varname <- 'dewpoint'
    tmpdir <- '/local_temp/ssobie/morph'
 } else {
    args <- commandArgs(trailingOnly=TRUE)

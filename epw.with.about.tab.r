@@ -133,6 +133,7 @@ calc_cwec_values <- function(present.epw.file,epw.dir,var.names) {
   epw.sph <- specific_humidity(epw.dwpt,epw.pas)
   epw.twb <- temp.wet.bulb(epw.tas+273,epw.dwpt,epw.pas,epw.sph) - 273
 
+  if (any(is.na(epw.twb))) { browser()}
   twb.975 <- round(quantile(epw.twb,0.975,names=F),1)
   twb.010 <- round(quantile(epw.twb,0.01,names=F),1)
   twb.025 <- round(quantile(epw.twb,0.025,names=F),1)
